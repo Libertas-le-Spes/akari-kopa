@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tray="$(dirname "$(realpath "$0")")/merge-requests-tray"
+command_path="$HOME/.local/bin/merge-requests-tray"
+autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/merge-requests-tray.desktop"
+
+if [ "${1:-}" = "--remove" ]; then
+  pkill -f "python3[^ ]* [^ ]*merge-requests-tray" || true
+  rm -f "$command_path" "$autostart"
+  echo "Removed the merge requests tray."
+  exit 0
+fi
+
+package_for() {
+  local tool=$1
+  if command -v apt-get >/dev/null; then
+    case $tool in gi) echo python3-gi ;; secret-tool) echo libsecret-tools ;; *) echo "$tool" ;; esac
+  elif command -v dnf >/dev/null; then
+    case $tool in gi) echo python3-gobject ;; secret-tool) echo libsecret ;; *) echo "$tool" ;; esac
+  elif command -v pacman >/dev/null; then
+    case $tool in gi) echo python-gobject ;; secret-tool) echo libsecret ;; python3) echo python ;; *) echo "$tool" ;; esac
+  elif command -v zypper >/dev/null; then
+    case $tool in gi) echo python3-gobject ;; secret-tool) echo libsecret-tools ;; *) echo "$tool" ;; esac
+  else
+    echo "$tool"
+  fi
+}
+
+missing=()
+for tool in python3 jq curl; do
+  command -v "$tool" >/dev/null || missing+=("$(package_for "$tool")")
+done
+if command -v python3 >/dev/null && ! python3 -c 'import gi; gi.require_version("Gio", "2.0")' 2>/dev/null; then
+  missing+=("$(package_for gi)")
+fi
+if [ ${#missing[@]} -gt 0 ]; then
+  echo "Install these packages first: ${missing[*]}" >&2
+  exit 1
+fi
+
+services=()
+command -v glab >/dev/null && services+=("GitLab (glab)")
+command -v gh >/dev/null && services+=("GitHub (gh)")
+command -v tea >/dev/null && services+=("Gitea/Forgejo (tea)")
+secret-tool lookup merge-requests bitbucket.org >/dev/null 2>&1 && services+=("Bitbucket (key in keyring)")
+
+mkdir -p "$(dirname "$command_path")" "$(dirname "$autostart")"
+ln -sf "$tray" "$command_path"
+cat > "$autostart" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Merge requests
+Comment=Pipeline state of your merge requests in the system tray
+Exec=$command_path
+Terminal=false
+X-GNOME-Autostart-enabled=true
+DESKTOP
+
+echo "Installed. It starts with your desktop session; to start it now, run: merge-requests-tray &"
+if [ ${#services[@]} -gt 0 ]; then
+  echo "Services it can read: ${services[*]}"
+else
+  echo "No service tools found yet: install and log in to glab, gh or tea (0.12+) for it to show anything."
+fi

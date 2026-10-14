@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+import hashlib
+import json
+import os
+import signal
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+import gi
+
+gi.require_version("Gio", "2.0")
+gi.require_version("GLib", "2.0")
+from gi.repository import Gio, GLib
+
+try:
+    gi.require_version("GLibUnix", "2.0")
+    from gi.repository import GLibUnix
+
+    on_signal = GLibUnix.signal_add
+except (ImportError, ValueError):
+    on_signal = GLib.unix_signal_add
+
+from orb import orb
+from status_notifier import SEPARATOR, WATCHER, Content, MenuEntry, TrayIcon
+
+CHECK = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "merge-requests")
+INTERVAL_SECONDS = 60
+ROLES = {"mine": "yours", "review": "reviewing"}
+
+
+def pipeline_word(merge_request):
+    return "running" if merge_request["pipeline"] == "pending" else merge_request["pipeline"]
+
+
+def open_in_browser(url):
+    try:
+        Gio.AppInfo.launch_default_for_uri(url, None)
+    except GLib.Error as error:
+        print("could not open %s: %s" % (url, error.message), file=sys.stderr)
+
+
+class MergeRequestTray:
+    def __init__(self, command):
+        self.command = command
+        self.merge_requests = []
+        self.failures = []
+        self.icons = {}
+        self.checking = False
+        self.session = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        Gio.bus_watch_name_on_connection(
+            self.session, WATCHER, Gio.BusNameWatcherFlags.NONE, self._watcher_appeared, None
+        )
+        GLib.timeout_add_seconds(INTERVAL_SECONDS, self._tick)
+        self.check()
+
+    def _tick(self):
+        self.check()
+        return True
+
+    def _watcher_appeared(self, connection, name, owner):
+        for icon in self.icons.values():
+            icon.register()
+
+    def check(self):
+        if self.checking:
+            return
+        try:
+            process = Gio.Subprocess.new(
+                [self.command], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE
+            )
+        except GLib.Error as error:
+            self.apply(self._failed_listing(error.message))
+            return
+        self.checking = True
+        process.communicate_utf8_async(None, None, self._checked)
+
+    def _checked(self, process, result):
+        self.checking = False
+        try:
+            _finished, output, _errors = process.communicate_utf8_finish(result)
+            listing = json.loads(output)
+        except GLib.Error as error:
+            listing = self._failed_listing(error.message)
+        except (ValueError, TypeError) as error:
+            listing = self._failed_listing(str(error))
+        self.apply(listing)
+
+    def _failed_listing(self, reason):
+        return {
+            "mergeRequests": [],
+            "failed": [{"provider": provider, "reason": reason} for provider in self._providers()],
+        }
+
+    def _providers(self):
+        return sorted({merge_request["provider"] for merge_request in self.merge_requests}) or ["merge-requests"]
+
+    def apply(self, listing):
+        failed = {failure["provider"] for failure in listing["failed"]}
+        kept = [merge_request for merge_request in self.merge_requests if merge_request["provider"] in failed]
+        self.merge_requests = listing["mergeRequests"] + kept
+        self.failures = listing["failed"]
+        self.sync()
+
+    def _failure_entries(self):
+        if not self.failures:
+            return []
+        return [SEPARATOR] + [
+            MenuEntry("Not updated: %s: %s" % (failure["provider"], failure["reason"]), None)
+            for failure in self.failures
+        ]
+
+    def _notify(self, summary, body):
+        self.session.call(
+            "org.freedesktop.Notifications", "/org/freedesktop/Notifications",
+            "org.freedesktop.Notifications", "Notify",
+            GLib.Variant("(susssasa{sv}i)", ("Merge requests", 0, "", summary, body, [], {}, 8000)),
+            None, Gio.DBusCallFlags.NONE, -1, None, None, None,
+        )
+
+    def _merge_request_content(self, merge_request):
+        title = "%s · %s" % (merge_request["reference"], merge_request["author"])
+        details = "%s · %s · %s" % (merge_request["project"], ROLES.get(merge_request["role"], ""), pipeline_word(merge_request))
+        description = "%s\n%s" % (merge_request["title"], details)
+        url = merge_request["url"]
+        return Content(
+            title=title,
+            description=description,
+            pixmaps=orb(merge_request["role"], merge_request["pipeline"], faded=bool(self.failures)),
+            menu=[
+                MenuEntry(title, lambda: open_in_browser(url)),
+                MenuEntry(merge_request["title"], None),
+                MenuEntry(details, None),
+                SEPARATOR,
+                MenuEntry("Open in browser", lambda: open_in_browser(url)),
+                MenuEntry("Check now", self.check),
+            ] + self._failure_entries(),
+            on_activate=lambda: self._notify(title, description),
+        )
+
+    def _failure_content(self):
+        names = ", ".join(failure["provider"] for failure in self.failures)
+        reasons = "\n".join("%s: %s" % (failure["provider"], failure["reason"]) for failure in self.failures)
+        title = "Merge requests not updated: %s" % names
+        return Content(
+            title=title,
+            description=reasons,
+            pixmaps=orb(None, "pending", faded=True),
+            menu=[MenuEntry("Check now", self.check)] + self._failure_entries(),
+            on_activate=lambda: self._notify(title, reasons),
+        )
+
+    def _wanted(self):
+        wanted = {}
+        for merge_request in self.merge_requests:
+            key = merge_request["provider"] + " " + merge_request["url"]
+            wanted[key] = self._merge_request_content(merge_request)
+        if not wanted and self.failures:
+            wanted["failures"] = self._failure_content()
+        return wanted
+
+    def sync(self):
+        wanted = self._wanted()
+        for key in [key for key in self.icons if key not in wanted]:
+            self.icons.pop(key).close()
+        for key, content in wanted.items():
+            if key in self.icons:
+                self.icons[key].update(content)
+            else:
+                item_id = "merge-request-" + hashlib.sha1(key.encode()).hexdigest()[:12]
+                self.icons[key] = TrayIcon(item_id, content)
+
+
+def main():
+    command = sys.argv[1] if len(sys.argv) > 1 else CHECK
+    loop = GLib.MainLoop()
+    for number in (signal.SIGINT, signal.SIGTERM):
+        on_signal(GLib.PRIORITY_DEFAULT, number, loop.quit)
+    MergeRequestTray(command)
+    loop.run()
+
+
+if __name__ == "__main__":
+    main()
