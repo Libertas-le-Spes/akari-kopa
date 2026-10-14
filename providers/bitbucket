@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s inherit_errexit
 
 command -v secret-tool >/dev/null || { echo '[]'; exit 0; }
 credentials=$(secret-tool lookup merge-requests bitbucket.org 2>/dev/null || true)
@@ -26,7 +27,8 @@ cards() {
   jq -c '.values[]' | while read -r pull_request; do
     repo=$(jq -r '.destination.repository.full_name' <<<"$pull_request")
     id=$(jq -r '.id' <<<"$pull_request")
-    jq -c -L "$lib" --arg role "$role" --argjson status "$(statuses "$repo" "$id")" '
+    status=$(statuses "$repo" "$id")
+    jq -c -L "$lib" --arg role "$role" --argjson status "$status" '
       include "merge-request";
       { reference: ("#" + (.id | tostring)),
         title,
