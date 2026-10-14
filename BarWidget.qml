@@ -15,7 +15,8 @@ BarWidget {
   })
 
   property var mergeRequests: []
-  property bool stale: false
+  property var failures: []
+  readonly property bool stale: failures.length > 0
   property bool popupOpen: false
 
   readonly property var mine: mergeRequests.filter(function(mr) { return mr.role === "mine" })
@@ -35,10 +36,14 @@ BarWidget {
   }
 
   function apply(listing) {
-    var failed = listing.failed
+    var failed = listing.failed.map(function(failure) { return failure.provider })
     var kept = mergeRequests.filter(function(mr) { return failed.indexOf(mr.provider) !== -1 })
     mergeRequests = listing.mergeRequests.concat(kept)
-    stale = failed.length > 0
+    failures = listing.failed
+  }
+
+  function failureSummary() {
+    return "Not updated: " + failures.map(function(failure) { return failure.provider }).join(", ")
   }
 
   function refresh() {
@@ -58,7 +63,7 @@ BarWidget {
     Qt.openUrlExternally(mr.url)
   }
 
-  visible: mergeRequests.length > 0
+  visible: mergeRequests.length > 0 || failures.length > 0
   implicitWidth: vertical ? barSize : orbs.implicitWidth + Style.space(8)
   implicitHeight: vertical ? orbs.implicitHeight + Style.space(8) : barSize
 
@@ -78,7 +83,7 @@ BarWidget {
         try {
           root.apply(JSON.parse(text))
         } catch (error) {
-          root.stale = true
+          root.failures = [{ provider: "merge-requests", reason: String(error) }]
         }
       }
     }
@@ -97,6 +102,30 @@ BarWidget {
     anchors.centerIn: parent
     columns: root.vertical ? 1 : root.mergeRequests.length
     spacing: Style.space(2)
+
+    WidgetButton {
+      visible: root.mergeRequests.length === 0 && root.stale
+      bar: root.bar
+      hasVisualContent: true
+      dimmed: true
+      fixedWidth: root.vertical ? root.barSize : Style.space(16)
+      fixedHeight: root.vertical ? Style.space(16) : root.barSize
+      tooltipText: root.failureSummary()
+      onPressed: function(button) {
+        if (button === Qt.LeftButton) root.popupOpen = !root.popupOpen
+        else if (button === Qt.MiddleButton) root.refresh()
+      }
+
+      Rectangle {
+        anchors.centerIn: parent
+        width: Style.space(10)
+        height: width
+        radius: width / 2
+        color: "transparent"
+        border.width: Math.max(1, Style.space(2))
+        border.color: root.bar ? root.bar.foreground : "white"
+      }
+    }
 
     Repeater {
       model: root.mergeRequests
@@ -228,6 +257,36 @@ BarWidget {
                 onClicked: root.openInBrowser(line.modelData)
               }
             }
+          }
+        }
+      }
+
+      Column {
+        width: sections.width
+        spacing: Style.space(4)
+        visible: root.stale
+
+        Text {
+          textFormat: Text.PlainText
+          text: "Not updated"
+          color: Qt.darker(root.bar.foreground, 1.3)
+          font.family: root.bar.fontFamily
+          font.pixelSize: Style.font.caption
+          font.capitalization: Font.AllUppercase
+        }
+
+        Repeater {
+          model: root.failures
+
+          Text {
+            required property var modelData
+            textFormat: Text.PlainText
+            text: modelData.provider + ": " + modelData.reason
+            color: Qt.darker(root.bar.foreground, 1.4)
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.Wrap
+            width: sections.width
           }
         }
       }

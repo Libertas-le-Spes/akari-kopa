@@ -2,6 +2,7 @@
 set -euo pipefail
 
 command -v tea >/dev/null || { echo '[]'; exit 0; }
+tea api --help >/dev/null 2>&1 || { echo "tea $(tea --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1) is too old: version 0.12 or newer is needed" >&2; exit 1; }
 
 lib="$(dirname "$(realpath "$0")")/../lib"
 logins=$(tea logins list --output json 2>/dev/null | jq -r '.[].name' || true)

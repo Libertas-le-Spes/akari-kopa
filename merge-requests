@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-export PATH="$PATH:$HOME/.local/bin:$HOME/.local/share/mise/shims"
+export PATH="$PATH:$HOME/.local/bin"
 
 providers="$(dirname "$(realpath "$0")")/providers"
 results=$(mktemp -d)
@@ -9,7 +9,7 @@ trap 'rm -rf "$results"' EXIT
 
 for provider in "$providers"/*; do
   name=$(basename "$provider")
-  ("$provider" > "$results/$name" 2>/dev/null || rm -f "$results/$name") &
+  ("$provider" > "$results/$name" 2> "$results/$name.error" || rm -f "$results/$name") &
 done
 wait
 
@@ -21,7 +21,8 @@ for provider in "$providers"/*; do
   if jq -e 'type == "array"' "$results/$name" >/dev/null 2>&1; then
     found=$(jq -c --slurpfile more "$results/$name" --arg name "$name" '. + ($more[0] | map(. + { provider: $name }))' <<<"$found")
   else
-    failed=$(jq -c --arg name "$name" '. + [$name]' <<<"$failed")
+    reason=$(grep -v '^[[:space:]]*$' "$results/$name.error" 2>/dev/null | tail -n 1 | cut -c 1-160)
+    failed=$(jq -c --arg name "$name" --arg reason "${reason:-no answer}" '. + [{ provider: $name, reason: $reason }]' <<<"$failed")
   fi
 done
 

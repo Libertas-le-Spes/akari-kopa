@@ -15,7 +15,7 @@ if [ -n "$(find "$cache" -mmin -5 2>/dev/null)" ]; then
 fi
 
 api() {
-  curl -sfg -K - -G "https://api.bitbucket.org/2.0$1" "${@:2}" <<<"user = \"$credentials\""
+  curl -sSfg -K - -G "https://api.bitbucket.org/2.0$1" "${@:2}" <<<"user = \"$credentials\""
 }
 
 statuses() {
@@ -42,7 +42,7 @@ cards() {
 
 me=$(api /user | jq -r '.uuid')
 workspaces=$(api /user/workspaces --data-urlencode pagelen=100 | jq -r '.values[].workspace.slug')
-since=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%S)
+since=$(date -u -d "@$(( $(date +%s) - 30 * 86400 ))" +%Y-%m-%dT%H:%M:%S)
 
 listing=$(
   for workspace in $workspaces; do
