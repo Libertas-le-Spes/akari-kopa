@@ -27,12 +27,11 @@ BarWidget {
   }
 
   function pipelineWord(mr) {
-    var word = mr.pipeline === "pending" ? "running" : mr.pipeline
-    return mr.merged ? "merged, " + word : word
+    return mr.pipeline === "pending" ? "running" : mr.pipeline
   }
 
   function summary(mr) {
-    return mr.reference + " · " + mr.author + (mr.merged ? " · merged" : "")
+    return mr.reference + " · " + mr.author
   }
 
   function apply(listing) {
