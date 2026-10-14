@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s inherit_errexit
 
 command -v glab >/dev/null || { echo '[]'; exit 0; }
 
 lib="$(dirname "$(realpath "$0")")/../lib"
+now=$(date +%s)
+since=$(date -u -d '-6 hours' +%FT%TZ)
 
-fields='nodes { iid title webUrl project { fullPath } author { name username } headPipeline { status } }'
+open_fields='nodes { iid title webUrl project { fullPath } author { name username } headPipeline { status } }'
+merged_fields='nodes { iid title webUrl mergedAt targetBranch project { fullPath } author { name username } }'
 query="
 query {
   currentUser {
-    authoredMergeRequests(state: opened, sort: CREATED_DESC) { $fields }
-    reviewRequestedMergeRequests(state: opened, sort: CREATED_DESC) { $fields }
+    authoredMergeRequests(state: opened, sort: CREATED_DESC) { $open_fields }
+    reviewRequestedMergeRequests(state: opened, sort: CREATED_DESC) { $open_fields }
+    mergedAuthored: authoredMergeRequests(state: merged, mergedAfter: \"$since\") { $merged_fields }
+    mergedReviewRequested: reviewRequestedMergeRequests(state: merged, mergedAfter: \"$since\") { $merged_fields }
   }
 }"
 
-hosts=$(glab auth status 2>&1 | grep -E '^[^[:space:]]' || true)
-
-for host in $hosts; do
-  glab auth status --hostname "$host" >/dev/null 2>&1 || continue
-  glab api --hostname "$host" graphql -f query="$query" | jq -c -L "$lib" '
+open_cards() {
+  jq -c -L "$lib" '
     include "merge-request";
     def gitlab($role):
       { reference: ("!" + .iid),
@@ -27,8 +30,45 @@ for host in $hosts; do
         project: .project.fullPath,
         author: person(.author.name; .author.username),
         status: .headPipeline.status }
-      | card($role; ["SUCCESS"]; ["FAILED", "CANCELED"]);
+      | card($role; ["SUCCESS", "MANUAL", "SKIPPED"]; ["FAILED", "CANCELED"]);
     .data.currentUser
-    | [(.authoredMergeRequests.nodes[] | gitlab("mine")),
-       (.reviewRequestedMergeRequests.nodes[] | gitlab("review"))]'
-done | jq -sc 'add // []'
+    | (.authoredMergeRequests.nodes[] | gitlab("mine")),
+      (.reviewRequestedMergeRequests.nodes[] | gitlab("review"))' <<<"$1"
+}
+
+merged_cards() {
+  local host=$1 response=$2
+  jq -c '.data.currentUser
+    | (.mergedAuthored.nodes[] | { role: "mine" } + .),
+      (.mergedReviewRequested.nodes[] | { role: "review" } + .)' <<<"$response" \
+    | while read -r merge_request; do
+        project=$(jq -r '.project.fullPath | @uri' <<<"$merge_request")
+        iid=$(jq -r '.iid' <<<"$merge_request")
+        target=$(jq -r '.targetBranch | @uri' <<<"$merge_request")
+        sha=$(glab api --hostname "$host" "projects/$project/merge_requests/$iid" \
+          | jq -r '.merge_commit_sha // .squash_commit_sha // .sha')
+        pipeline=$(glab api --hostname "$host" "projects/$project/pipelines?sha=$sha&ref=$target&per_page=1" \
+          | jq -c '.[0] // {}')
+        jq -c -L "$lib" --argjson pipeline "$pipeline" --argjson now "$now" '
+          include "merge-request";
+          .role as $role
+          | { reference: ("!" + .iid),
+              title,
+              url: .webUrl,
+              project: .project.fullPath,
+              author: person(.author.name; .author.username),
+              status: $pipeline.status,
+              settled: $pipeline.updated_at,
+              mergedAt }
+          | merged_card($role; ["success", "manual", "skipped"]; ["failed", "canceled"]; $now)' <<<"$merge_request"
+      done
+}
+
+hosts=$(glab auth status 2>&1 | grep -E '^[^[:space:]]' || true)
+
+for host in $hosts; do
+  glab auth status --hostname "$host" >/dev/null 2>&1 || continue
+  response=$(glab api --hostname "$host" graphql -f query="$query")
+  open_cards "$response"
+  merged_cards "$host" "$response"
+done | jq -sc '.'

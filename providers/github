@@ -4,29 +4,46 @@ set -euo pipefail
 command -v gh >/dev/null || { echo '[]'; exit 0; }
 
 lib="$(dirname "$(realpath "$0")")/../lib"
+now=$(date +%s)
+since=$(date -u -d '-6 hours' +%FT%TZ)
 
-fields='number title url repository { nameWithOwner } author { login ... on User { name } } commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
+open_fields='number title url repository { nameWithOwner } author { login ... on User { name } } commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
+merged_fields="number title url mergedAt repository { nameWithOwner } author { login ... on User { name } }
+  mergeCommit { statusCheckRollup { state contexts(last: 100) { nodes { ... on CheckRun { completedAt } ... on StatusContext { createdAt } } } } }"
 query="
 query {
-  viewer { pullRequests(states: OPEN, first: 50, orderBy: { field: CREATED_AT, direction: DESC }) { nodes { $fields } } }
-  search(query: \"is:open is:pr review-requested:@me archived:false\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $fields } } }
+  viewer { pullRequests(states: OPEN, first: 50, orderBy: { field: CREATED_AT, direction: DESC }) { nodes { $open_fields } } }
+  search(query: \"is:open is:pr review-requested:@me archived:false\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $open_fields } } }
+  mergedAuthored: search(query: \"is:pr is:merged author:@me merged:>=$since\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $merged_fields } } }
+  mergedReviewRequested: search(query: \"is:pr is:merged review-requested:@me merged:>=$since\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $merged_fields } } }
+  mergedReviewed: search(query: \"is:pr is:merged reviewed-by:@me -author:@me merged:>=$since\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $merged_fields } } }
 }"
 
-hosts=$(gh auth status --json hosts 2>/dev/null \
-  | jq -r '.hosts | to_entries[] | select(any(.value[]; .active and .state == "success")) | .key' || true)
+hosts=$(gh auth status 2>&1 | grep -E '^[^[:space:]]' || true)
 
 for host in $hosts; do
-  gh api --hostname "$host" graphql -f query="$query" | jq -c -L "$lib" '
+  gh auth status --hostname "$host" >/dev/null 2>&1 || continue
+  gh api --hostname "$host" graphql -f query="$query" | jq -c -L "$lib" --argjson now "$now" '
     include "merge-request";
-    def github($role):
+    def pull_request:
       { reference: ("#" + (.number | tostring)),
         title,
         url,
         project: .repository.nameWithOwner,
-        author: person(.author.name; .author.login),
-        status: .commits.nodes[0].commit.statusCheckRollup.state }
+        author: person(.author.name; .author.login) };
+    def github($role):
+      pull_request + { status: .commits.nodes[0].commit.statusCheckRollup.state }
       | card($role; ["SUCCESS"]; ["FAILURE", "ERROR"]);
+    def merged_github($role):
+      .mergeCommit.statusCheckRollup as $checks
+      | pull_request
+        + { status: $checks.state,
+            settled: ([$checks.contexts.nodes[]? | .completedAt // .createdAt | select(.)] | max),
+            mergedAt }
+      | merged_card($role; ["SUCCESS"]; ["FAILURE", "ERROR"]; $now);
     .data
     | [(.viewer.pullRequests.nodes[] | github("mine")),
-       (.search.nodes[] | select(.number) | github("review"))]'
+       (.search.nodes[] | select(.number) | github("review")),
+       (.mergedAuthored.nodes[] | select(.number) | merged_github("mine")),
+       ([.mergedReviewRequested.nodes[], .mergedReviewed.nodes[]] | map(select(.number)) | unique_by(.url)[] | merged_github("review"))]'
 done | jq -sc 'add // []'
