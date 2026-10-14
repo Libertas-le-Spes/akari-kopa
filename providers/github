@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v gh >/dev/null || { echo '[]'; exit 0; }
+
+lib="$(dirname "$(realpath "$0")")/../lib"
+
+fields='number title url repository { nameWithOwner } author { login ... on User { name } } commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
+query="
+query {
+  viewer { pullRequests(states: OPEN, first: 50, orderBy: { field: CREATED_AT, direction: DESC }) { nodes { $fields } } }
+  search(query: \"is:open is:pr review-requested:@me archived:false\", type: ISSUE, first: 50) { nodes { ... on PullRequest { $fields } } }
+}"
+
+hosts=$(gh auth status --json hosts 2>/dev/null \
+  | jq -r '.hosts | to_entries[] | select(any(.value[]; .active and .state == "success")) | .key' || true)
+
+for host in $hosts; do
+  gh api --hostname "$host" graphql -f query="$query" | jq -c -L "$lib" '
+    include "merge-request";
+    def github($role):
+      { reference: ("#" + (.number | tostring)),
+        title,
+        url,
+        project: .repository.nameWithOwner,
+        author: person(.author.name; .author.login),
+        status: .commits.nodes[0].commit.statusCheckRollup.state }
+      | card($role; ["SUCCESS"]; ["FAILURE", "ERROR"]);
+    .data
+    | [(.viewer.pullRequests.nodes[] | github("mine")),
+       (.search.nodes[] | select(.number) | github("review"))]'
+done | jq -sc 'add // []'

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "kayu.merge-requests",
+  "name": "Merge requests",
+  "version": "1.0.0",
+  "author": "kayu",
+  "description": "Pipeline state of my open GitLab merge requests and the ones I am reviewing",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Merge requests",
+    "description": "Pipeline state of my open GitLab merge requests and the ones I am reviewing",
+    "category": "Development",
+    "allowMultiple": false,
+    "defaults": {
+      "intervalSeconds": 60
+    },
+    "schema": [
+      {
+        "key": "intervalSeconds",
+        "type": "number",
+        "label": "Refresh every (seconds)",
+        "min": 15,
+        "max": 900,
+        "step": 15,
+        "defaultValue": 60
+      }
+    ]
+  }
+}
