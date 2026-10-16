@@ -27,10 +27,7 @@ from status_notifier import SEPARATOR, WATCHER, Content, MenuEntry, TrayIcon
 CHECK = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "merge-requests")
 INTERVAL_SECONDS = 60
 ROLES = {"mine": "yours", "review": "reviewing"}
-
-
-def pipeline_word(merge_request):
-    return "running" if merge_request["pipeline"] == "pending" else merge_request["pipeline"]
+WORDS = {"passing": "passing", "idle": "no pipeline", "pending": "running", "failing": "failing", "comments": "comments to answer"}
 
 
 def open_in_browser(url):
@@ -120,13 +117,13 @@ class MergeRequestTray:
 
     def _merge_request_content(self, merge_request):
         title = "%s · %s" % (merge_request["reference"], merge_request["author"])
-        details = "%s · %s · %s" % (merge_request["project"], ROLES.get(merge_request["role"], ""), pipeline_word(merge_request))
+        details = "%s · %s · %s" % (merge_request["project"], ROLES.get(merge_request["role"], ""), WORDS.get(merge_request["orb"], ""))
         description = "%s\n%s" % (merge_request["title"], details)
         url = merge_request["url"]
         return Content(
             title=title,
             description=description,
-            pixmaps=orb(merge_request["role"], merge_request["pipeline"], faded=bool(self.failures)),
+            pixmaps=orb(merge_request["role"], merge_request["orb"], faded=bool(self.failures)),
             menu=[
                 MenuEntry(title, lambda: open_in_browser(url)),
                 MenuEntry(merge_request["title"], None),

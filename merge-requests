@@ -3,7 +3,8 @@ set -uo pipefail
 
 export PATH="$PATH:$HOME/.local/bin"
 
-providers="$(dirname "$(realpath "$0")")/providers"
+here="$(dirname "$(realpath "$0")")"
+providers="$here/providers"
 results=$(mktemp -d)
 trap 'rm -rf "$results"' EXIT
 
@@ -26,4 +27,6 @@ for provider in "$providers"/*; do
   fi
 done
 
-jq -nc --argjson mergeRequests "$found" --argjson failed "$failed" '{ $mergeRequests, $failed }'
+jq -nc -L "$here/lib" --argjson mergeRequests "$found" --argjson failed "$failed" '
+  include "orb";
+  { mergeRequests: ($mergeRequests | on_the_bar(now)), $failed }'

@@ -5,12 +5,15 @@ command -v glab >/dev/null || { echo '[]'; exit 0; }
 
 lib="$(dirname "$(realpath "$0")")/../lib"
 
-fields='nodes { iid title webUrl project { fullPath } author { name username } headPipeline { status } }'
+fields='iid title webUrl project { fullPath } author { name username } headPipeline { status }'
+conversation='createdAt project { userPermissions { pushCode } }
+  discussions(first: 100) { nodes { resolvable resolved notes(first: 1) { nodes { system createdAt author { username bot } } } } }'
 query="
 query {
   currentUser {
-    authoredMergeRequests(state: opened, sort: CREATED_DESC) { $fields }
-    reviewRequestedMergeRequests(state: opened, sort: CREATED_DESC) { $fields }
+    username
+    authoredMergeRequests(state: opened, sort: CREATED_DESC) { nodes { $fields $conversation } }
+    reviewRequestedMergeRequests(state: opened, sort: CREATED_DESC) { nodes { $fields } }
   }
 }"
 
@@ -28,7 +31,17 @@ for host in $hosts; do
         author: person(.author.name; .author.username),
         status: .headPipeline.status }
       | card($role; ["SUCCESS", "MANUAL", "SKIPPED"]; ["FAILED", "CANCELED"]);
+    def from_others($me): select(.author.username != $me and (.author.bot | not));
+    def conversation($me):
+      [.discussions.nodes[] | { resolvable, resolved } + .notes.nodes[0]] as $openers
+      | { createdAt,
+          foreign: (.project.userPermissions.pushCode | not),
+          waitingSince: waiting_since(
+            [$openers[] | select(.resolvable and (.resolved | not)) | from_others($me) | .createdAt];
+            [$openers[] | select((.resolvable or .system) | not) | from_others($me) | .createdAt];
+            [$openers[] | select(.author.username == $me) | .createdAt] | max) };
     .data.currentUser
-    | [(.authoredMergeRequests.nodes[] | gitlab("mine")),
+    | .username as $me
+    | [(.authoredMergeRequests.nodes[] | (gitlab("mine") + conversation($me))),
        (.reviewRequestedMergeRequests.nodes[] | gitlab("review"))]'
 done | jq -sc 'add // []'

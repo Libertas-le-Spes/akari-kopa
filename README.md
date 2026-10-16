@@ -4,11 +4,14 @@ One coloured orb per open merge request, in your bar or system tray, so you see 
 
 | Orb | Meaning |
 |---|---|
-| green / red | your merge request, pipeline passed / failed |
+| green / red | your merge request, pipeline passed / failed; green too when it has no pipeline |
+| purple | yours, no pipeline, and someone left comments you have not resolved or answered |
 | blue / yellow | one you are reviewing, pipeline passed / failed |
 | ring | pipeline still running |
 
 Hover shows the number and author; a click lists them and opens one. A pipeline waiting on manual jobs counts as passed. An orb leaves once its merge request merges or closes.
+
+A merge request to a repository you cannot push to shows for its first three days, then steps aside: maintainers there answer when they answer. It is looked at again every two days after that and comes back only if comments are waiting for you.
 
 ## Omarchy
 

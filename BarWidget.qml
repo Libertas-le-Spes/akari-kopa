@@ -10,8 +10,12 @@ BarWidget {
   moduleName: "kayu.merge-requests"
 
   readonly property var orbColors: ({
-    mine: { passing: "#3fb950", failing: "#f85149" },
-    review: { passing: "#4c8dff", failing: "#e3b341" }
+    mine: { passing: "#3fb950", idle: "#3fb950", pending: "#3fb950", failing: "#f85149", comments: "#a371f7" },
+    review: { passing: "#4c8dff", idle: "#4c8dff", pending: "#4c8dff", failing: "#e3b341", comments: "#4c8dff" }
+  })
+
+  readonly property var orbWords: ({
+    passing: "passing", idle: "no pipeline", pending: "running", failing: "failing", comments: "comments to answer"
   })
 
   property var mergeRequests: []
@@ -23,12 +27,11 @@ BarWidget {
   readonly property var reviewing: mergeRequests.filter(function(mr) { return mr.role === "review" })
 
   function orbColor(mr) {
-    var palette = orbColors[mr.role]
-    return mr.pipeline === "failing" ? palette.failing : palette.passing
+    return orbColors[mr.role][mr.orb]
   }
 
-  function pipelineWord(mr) {
-    return mr.pipeline === "pending" ? "running" : mr.pipeline
+  function orbWord(mr) {
+    return orbWords[mr.orb]
   }
 
   function summary(mr) {
@@ -148,7 +151,7 @@ BarWidget {
           width: Style.space(10)
           height: width
           radius: width / 2
-          color: modelData.pipeline === "pending" ? "transparent" : root.orbColor(modelData)
+          color: modelData.orb === "pending" ? "transparent" : root.orbColor(modelData)
           border.width: Math.max(1, Style.space(2))
           border.color: root.orbColor(modelData)
         }
@@ -217,7 +220,7 @@ BarWidget {
                   width: Style.space(10)
                   height: width
                   radius: width / 2
-                  color: line.modelData.pipeline === "pending" ? "transparent" : root.orbColor(line.modelData)
+                  color: line.modelData.orb === "pending" ? "transparent" : root.orbColor(line.modelData)
                   border.width: Math.max(1, Style.space(2))
                   border.color: root.orbColor(line.modelData)
                 }
@@ -239,7 +242,7 @@ BarWidget {
 
                   Text {
                     textFormat: Text.PlainText
-                    text: line.modelData.title + "  ·  " + line.modelData.project + "  ·  " + root.pipelineWord(line.modelData)
+                    text: line.modelData.title + "  ·  " + line.modelData.project + "  ·  " + root.orbWord(line.modelData)
                     color: Qt.darker(root.bar.foreground, 1.4)
                     font.family: root.bar.fontFamily
                     font.pixelSize: Style.font.caption

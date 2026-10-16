@@ -15,7 +15,7 @@ pull_requests() {
         repo=$(jq -r '.repository.full_name' <<<"$issue")
         number=$(jq -r '.number' <<<"$issue")
         sha=$(tea api --login "$login" "/repos/$repo/pulls/$number" | jq -r '.head.sha')
-        status=$(tea api --login "$login" "/repos/$repo/commits/$sha/status" | jq -c '.state')
+        status=$(tea api --login "$login" "/repos/$repo/commits/$sha/status" | jq -c 'if .total_count == 0 then null else .state end')
         jq -c -L "$lib" --arg role "$role" --argjson status "$status" '
           include "merge-request";
           { reference: ("#" + (.number | tostring)),

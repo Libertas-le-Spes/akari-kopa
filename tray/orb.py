@@ -1,18 +1,22 @@
 SIZES = (16, 22, 24, 32, 48, 64)
 
+GREEN = (0x3F, 0xB9, 0x50)
+RED = (0xF8, 0x51, 0x49)
+PURPLE = (0xA3, 0x71, 0xF7)
+BLUE = (0x4C, 0x8D, 0xFF)
+YELLOW = (0xE3, 0xB3, 0x41)
+
 COLOURS = {
-    ("mine", "passing"): (0x3F, 0xB9, 0x50),
-    ("mine", "failing"): (0xF8, 0x51, 0x49),
-    ("review", "passing"): (0x4C, 0x8D, 0xFF),
-    ("review", "failing"): (0xE3, 0xB3, 0x41),
+    "mine": {"passing": GREEN, "idle": GREEN, "pending": GREEN, "failing": RED, "comments": PURPLE},
+    "review": {"passing": BLUE, "idle": BLUE, "pending": BLUE, "failing": YELLOW, "comments": BLUE},
 }
 
 UNKNOWN = (0x9A, 0xA0, 0xA6)
 SAMPLES = 4
 
 
-def colour_for(role, pipeline):
-    return COLOURS.get((role, "failing" if pipeline == "failing" else "passing"), UNKNOWN)
+def colour_for(role, state):
+    return COLOURS.get(role, {}).get(state, UNKNOWN)
 
 
 def _coverage(x, y, size, radius, ring):
@@ -41,7 +45,7 @@ def pixmap(size, colour, hollow, faded):
     return size, size, bytes(data)
 
 
-def orb(role, pipeline, faded=False):
-    colour = colour_for(role, pipeline)
-    hollow = pipeline not in ("passing", "failing")
+def orb(role, state, faded=False):
+    colour = colour_for(role, state)
+    hollow = state == "pending"
     return [pixmap(size, colour, hollow, faded) for size in SIZES]
