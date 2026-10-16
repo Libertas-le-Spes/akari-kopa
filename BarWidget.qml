@@ -151,7 +151,7 @@ BarWidget {
           width: Style.space(10)
           height: width
           radius: width / 2
-          color: modelData.orb === "pending" ? "transparent" : root.orbColor(modelData)
+          color: modelData.running ? "transparent" : root.orbColor(modelData)
           border.width: Math.max(1, Style.space(2))
           border.color: root.orbColor(modelData)
         }
@@ -220,7 +220,7 @@ BarWidget {
                   width: Style.space(10)
                   height: width
                   radius: width / 2
-                  color: line.modelData.orb === "pending" ? "transparent" : root.orbColor(line.modelData)
+                  color: line.modelData.running ? "transparent" : root.orbColor(line.modelData)
                   border.width: Math.max(1, Style.space(2))
                   border.color: root.orbColor(line.modelData)
                 }

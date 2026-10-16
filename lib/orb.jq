@@ -17,10 +17,10 @@ def still_followed($now): age($now) < given_up and (held($now) or seen_at_last_c
 
 def shown($now): (.foreign | not) or still_followed($now);
 
-def settled: { none: "idle", passing: "passing" }[.pipeline];
+def pipeline_colour: { none: "idle" }[.pipeline] // .pipeline;
 
-def waiting_or_settled: if .waitingSince then "comments" else settled end;
+def comments_outrank_pipeline: .waitingSince != null and .pipeline != "failing";
 
-def orb: if settled then waiting_or_settled else .pipeline end;
+def orb: if comments_outrank_pipeline then "comments" else pipeline_colour end;
 
-def on_the_bar($now): map(select(shown($now)) | . + { orb: orb });
+def on_the_bar($now): map(select(shown($now)) | . + { orb: orb, running: (.pipeline == "pending") });

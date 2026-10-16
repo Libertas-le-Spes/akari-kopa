@@ -45,7 +45,6 @@ def pixmap(size, colour, hollow, faded):
     return size, size, bytes(data)
 
 
-def orb(role, state, faded=False):
+def orb(role, state, hollow, faded=False):
     colour = colour_for(role, state)
-    hollow = state == "pending"
     return [pixmap(size, colour, hollow, faded) for size in SIZES]
