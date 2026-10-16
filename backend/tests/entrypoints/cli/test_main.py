@@ -10,4 +10,4 @@ class Main(unittest.TestCase):
         errors = io.StringIO()
         with contextlib.redirect_stderr(errors):
             self.assertEqual(main(["dance"]), 2)
-        self.assertEqual(errors.getvalue(), "merge-requests: say one of board, tray\n")
+        self.assertEqual(errors.getvalue(), "merge-requests: say one of board, tray, choose, shortcut, remove-shortcut\n")

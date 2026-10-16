@@ -11,10 +11,21 @@ class CommandLine:
     def installed(self, tool: str) -> bool:
         return shutil.which(tool) is not None
 
+    def answer(self, *arguments: str) -> str | None:
+        if not self.installed(arguments[0]):
+            return None
+        finished = subprocess.run(arguments, capture_output=True, text=True)
+        return finished.stdout.strip() if finished.returncode == 0 else None
+
+    def start(self, *arguments: str) -> None:
+        subprocess.Popen(arguments, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
     def succeeds(self, *arguments: str) -> bool:
         return subprocess.run(arguments, capture_output=True).returncode == 0
 
     def text(self, *arguments: str) -> str:
+        if not self.installed(arguments[0]):
+            raise ServiceError(f"{arguments[0]} is not installed")
         finished = subprocess.run(arguments, capture_output=True, text=True)
         if finished.returncode != 0:
             raise ServiceError(_reason(finished.stderr) or f"{arguments[0]} failed")

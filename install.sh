@@ -28,6 +28,7 @@ package_for() {
 
 remove() {
   pkill -f "python3[^ ]* -m merge_requests tray" || true
+  "$here/backend/bin/merge-requests" remove-shortcut || true
   rm -f "$command_path" "$autostart"
   echo "Removed the merge requests tray."
 }
@@ -74,5 +75,6 @@ if [ -n "$missing" ]; then
 fi
 
 install_tray
+"$command_path" shortcut || true
 readable=$(found_services | sort | paste -sd ',' | sed 's/,/, /g')
 echo "Services it can read: ${readable:-none yet; install and log in to glab, gh or tea (0.12+)}"
