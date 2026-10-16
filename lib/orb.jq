@@ -1,7 +1,7 @@
 def days: . * 86400;
 def hold: 3 | days;
 def checks: [3, 5, 7, 14, 21, 28] | map(days);
-def given_up: 30 | days;
+def given_up: 31 | days;
 
 def age($now): $now - (.createdAt | fromdateiso8601);
 
