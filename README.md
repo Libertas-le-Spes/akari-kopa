@@ -40,22 +40,31 @@ It starts with your session from then on. `install.sh --remove` undoes it.
 
 ## Services
 
-Each service is read through the tool you already log in with, so no key is stored here.
+Each service is read through the tool you already log in with. Bitbucket and Azure DevOps have no such tool, so their key goes in the system keyring.
 
 | Service | Log in with |
 |---|---|
 | GitLab, including self-hosted | `glab auth login` |
 | GitHub, including Enterprise | `gh auth login` |
 | Gitea, Forgejo, Codeberg | `tea login add` (tea 0.12 or newer) |
-| Bitbucket Cloud | an API token in the system keyring, below |
+| Bitbucket Cloud | an API token in the keyring, below |
+| Azure DevOps | a personal access token in the keyring, below |
 
-Bitbucket has no login tool, so its key goes in the keyring. Create an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens) with the read scopes for user, workspace, repository and pull request, then:
+For Bitbucket, create an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens) with the read scopes for user, workspace, repository, permission and pull request, then:
 
 ```sh
 secret-tool store --label="Bitbucket (merge requests)" merge-requests bitbucket.org
 ```
 
 and enter `you@example.com:your-token`. Bitbucket is checked every five minutes rather than every minute, to stay inside its rate limit.
+
+For Azure DevOps, create a [personal access token](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate) for **all accessible organizations** with the read scopes for code, build, security and user profile, then:
+
+```sh
+secret-tool store --label="Azure DevOps (merge requests)" merge-requests dev.azure.com
+```
+
+and enter the token. Every organisation you belong to is read, and a pull request's pipeline is the builds Azure Pipelines ran for it.
 
 When a service cannot be reached, its last answer stays on show, faded, with the reason in the list.
 

@@ -58,6 +58,7 @@ found_services() {
     command -v "$tool" >/dev/null && echo "${services[$tool]}"
   done
   secret-tool lookup merge-requests bitbucket.org >/dev/null 2>&1 && echo "Bitbucket (key in the keyring)"
+  secret-tool lookup merge-requests dev.azure.com >/dev/null 2>&1 && echo "Azure DevOps (key in the keyring)"
   true
 }
 

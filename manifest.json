@@ -4,7 +4,7 @@
   "name": "Merge requests",
   "version": "2.0.0",
   "author": "kayu",
-  "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Bitbucket",
+  "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea, Bitbucket and Azure DevOps",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
   },
   "barWidget": {
     "displayName": "Merge requests",
-    "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Bitbucket",
+    "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea, Bitbucket and Azure DevOps",
     "category": "Development",
     "allowMultiple": false,
     "defaults": {

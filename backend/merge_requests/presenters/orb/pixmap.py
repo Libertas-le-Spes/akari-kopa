@@ -19,12 +19,8 @@ def _pixmap(size: int, look: Look) -> Pixmap:
     ring = max(1.0, size * 0.09) if look.ring else None
     opacity = FADED_OPACITY if look.faded else 1.0
     rgb = _rgb(look.colour)
-    data = bytearray()
-    for y in range(size):
-        for x in range(size):
-            data.append(round(255 * opacity * _coverage(x, y, size, radius, ring)))
-            data += rgb
-    return Pixmap(size, size, bytes(data))
+    pixels = (bytes([round(255 * opacity * _coverage(x, y, size, radius, ring))]) + rgb for y in range(size) for x in range(size))
+    return Pixmap(size, size, b"".join(pixels))
 
 
 def _coverage(x: int, y: int, size: int, radius: float, ring: float | None) -> float:

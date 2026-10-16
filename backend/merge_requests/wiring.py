@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from merge_requests.adapters.keyring.secret_tool import SecretTool
+from merge_requests.adapters.services.azure_devops.azure_devops import AzureDevOps
 from merge_requests.adapters.services.bitbucket.bitbucket import Bitbucket
 from merge_requests.adapters.services.gitea.gitea import Gitea
 from merge_requests.adapters.services.gitea.tea import Tea
@@ -33,6 +34,7 @@ def services(command_line: CommandLine, clock: Clock) -> list[Service]:
         GitHub(GraphQlCli(command_line, "gh")),
         Gitea(Tea(command_line)),
         Bitbucket(SecretTool(command_line), Https, clock),
+        AzureDevOps(SecretTool(command_line), Https),
     ]
 
 
