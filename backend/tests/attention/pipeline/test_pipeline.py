@@ -1,6 +1,6 @@
 import unittest
 
-from merge_requests.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING, PipelineWords
+from akari_kopa.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING, PipelineWords
 
 WORDS = PipelineWords(frozenset({"ok", "skipped"}), frozenset({"broken"}))
 

@@ -1,8 +1,8 @@
 import unittest
 
-from merge_requests.attention.merge_request.role import REVIEWING
-from merge_requests.presenters.board.board_view import board_view
-from merge_requests.use_cases.listing.board import Board, NotUpdated
+from akari_kopa.attention.merge_request.role import REVIEWING
+from akari_kopa.presenters.board.board_view import board_view
+from akari_kopa.use_cases.listing.board import Board, NotUpdated
 from tests.fakes import a_merge_request
 
 

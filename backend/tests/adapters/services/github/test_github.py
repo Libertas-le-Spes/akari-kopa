@@ -1,10 +1,10 @@
 import unittest
 
-from merge_requests.adapters.services.github.github import GitHub
-from merge_requests.adapters.transport.graphql_cli import GraphQlCli
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import NO_PIPELINE, PASSED
-from merge_requests.attention.repository.follow_up import OWN, SOMEONE_ELSES
+from akari_kopa.adapters.services.github.github import GitHub
+from akari_kopa.adapters.transport.graphql_cli import GraphQlCli
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE, PASSED
+from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fakes import FakeCommandLine, on_day
 
 SIGNED_IN = {("gh", "auth", "status"): "github.com\n  ✓ Logged in to github.com\n", ("gh", "auth", "status", "--hostname", "github.com"): ""}

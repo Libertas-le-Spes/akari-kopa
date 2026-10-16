@@ -1,9 +1,9 @@
 import unittest
 
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING
-from merge_requests.presenters.orb.look import BLUE, GREEN, PURPLE, RED, YELLOW, look_of, word_of
-from merge_requests.presenters.orb.pixmap import pixmaps
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING
+from akari_kopa.presenters.orb.look import BLUE, GREEN, PURPLE, RED, YELLOW, look_of, word_of
+from akari_kopa.presenters.orb.pixmap import pixmaps
 from tests.fakes import a_merge_request, commented_on
 
 

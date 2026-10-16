@@ -1,9 +1,9 @@
 import unittest
 
-from merge_requests.adapters.services.bitbucket.bitbucket import Bitbucket
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import FAILED, NO_PIPELINE
-from merge_requests.attention.repository.follow_up import SOMEONE_ELSES
+from akari_kopa.adapters.services.bitbucket.bitbucket import Bitbucket
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import FAILED, NO_PIPELINE
+from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
 from tests.fakes import Clock, on_day
 
 PULLS = "/repositories/them/thing/pullrequests"

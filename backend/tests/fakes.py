@@ -1,12 +1,12 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
-from merge_requests.adapters.storage.answer_folder import StoredAnswer
-from merge_requests.attention.conversation.conversation import Conversation
-from merge_requests.attention.merge_request.merge_request import MergeRequest
-from merge_requests.attention.merge_request.role import MINE
-from merge_requests.attention.pipeline.pipeline import NO_PIPELINE
-from merge_requests.use_cases.listing.ports import ServiceError
+from akari_kopa.adapters.storage.answer_folder import StoredAnswer
+from akari_kopa.attention.conversation.conversation import Conversation
+from akari_kopa.attention.merge_request.merge_request import MergeRequest
+from akari_kopa.attention.merge_request.role import MINE
+from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE
+from akari_kopa.use_cases.listing.ports import ServiceError
 
 OPENED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 

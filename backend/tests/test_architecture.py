@@ -2,7 +2,7 @@ import ast
 import unittest
 from pathlib import Path
 
-PACKAGE = Path(__file__).parent.parent / "merge_requests"
+PACKAGE = Path(__file__).parent.parent / "akari_kopa"
 
 MAY_IMPORT = {
     "attention": {"attention"},
@@ -41,7 +41,7 @@ class DependenciesPointInward(unittest.TestCase):
             f"{path.relative_to(PACKAGE.parent)}:{line} ({ring_of(module)}) imports {imported}"
             for path, module in modules()
             for line, imported in imports_of(path)
-            if imported.startswith("merge_requests.") and ring_of(imported) not in MAY_IMPORT[ring_of(module)]
+            if imported.startswith("akari_kopa.") and ring_of(imported) not in MAY_IMPORT[ring_of(module)]
         ]
         self.assertEqual(breaches, [])
 

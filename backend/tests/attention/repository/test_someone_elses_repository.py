@@ -1,7 +1,7 @@
 import unittest
 
-from merge_requests.attention.conversation.conversation import QUIET, Conversation
-from merge_requests.attention.repository.follow_up import OWN, SOMEONE_ELSES
+from akari_kopa.attention.conversation.conversation import QUIET, Conversation
+from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fakes import OPENED, on_day
 
 DAYS = (1, 2, 3, 4, 4.5, 5, 6, 7, 10, 14, 20, 21, 28, 29.9, 30, 30.9, 31, 40)

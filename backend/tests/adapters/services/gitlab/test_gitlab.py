@@ -1,10 +1,10 @@
 import unittest
 
-from merge_requests.adapters.services.gitlab.gitlab import GitLab
-from merge_requests.adapters.transport.graphql_cli import GraphQlCli
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import FAILED, PASSED, RUNNING
-from merge_requests.attention.repository.follow_up import OWN, SOMEONE_ELSES
+from akari_kopa.adapters.services.gitlab.gitlab import GitLab
+from akari_kopa.adapters.transport.graphql_cli import GraphQlCli
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import FAILED, PASSED, RUNNING
+from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fakes import FakeCommandLine, on_day
 
 SIGNED_IN = {("glab", "auth", "status"): "gitlab.com\n  ✓ Logged in\n", ("glab", "auth", "status", "--hostname", "gitlab.com"): ""}

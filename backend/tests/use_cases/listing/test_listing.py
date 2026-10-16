@@ -2,8 +2,8 @@ import unittest
 from dataclasses import replace
 from datetime import timedelta
 
-from merge_requests.attention.repository.follow_up import SOMEONE_ELSES
-from merge_requests.use_cases.listing.listing import Listing
+from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
+from akari_kopa.use_cases.listing.listing import Listing
 from tests.fakes import Clock, FakeAnswers, FakeService, a_merge_request, on_day
 
 
