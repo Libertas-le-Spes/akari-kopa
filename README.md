@@ -16,7 +16,7 @@ A merge request to a repository you cannot push to shows for its first three day
 ## Omarchy
 
 ```sh
-omarchy plugin add https://github.com/KayAugust/merge-requests.git --enable --yes
+omarchy plugin add https://github.com/Libertas-le-Spes/merge-requests.git --enable --yes
 omarchy bar put kayu.merge-requests --section center
 ```
 
@@ -31,7 +31,7 @@ For the Super + Ctrl + M shortcut to the list:
 A system tray icon per merge request, for KDE, XFCE, Cinnamon, MATE, Budgie, Waybar, and GNOME with the AppIndicator extension.
 
 ```sh
-git clone https://github.com/KayAugust/merge-requests.git ~/.local/share/merge-requests
+git clone https://github.com/Libertas-le-Spes/merge-requests.git ~/.local/share/merge-requests
 ~/.local/share/merge-requests/install.sh
 merge-requests tray &
 ```
