@@ -2,18 +2,18 @@
   "schemaVersion": 1,
   "id": "kayu.merge-requests",
   "name": "Merge requests",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "author": "kayu",
-  "description": "Pipeline state of my open GitLab merge requests and the ones I am reviewing",
+  "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Bitbucket",
   "kinds": [
     "bar-widget"
   ],
   "entryPoints": {
-    "barWidget": "BarWidget.qml"
+    "barWidget": "frontend/omarchy-bar/BarWidget.qml"
   },
   "barWidget": {
     "displayName": "Merge requests",
-    "description": "Pipeline state of my open GitLab merge requests and the ones I am reviewing",
+    "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Bitbucket",
     "category": "Development",
     "allowMultiple": false,
     "defaults": {

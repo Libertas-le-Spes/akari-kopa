@@ -5,7 +5,7 @@ One coloured orb per open merge request, in your bar or system tray, so you see 
 | Orb | Meaning |
 |---|---|
 | green / red | your merge request, pipeline passed / failed; green too when it has no pipeline |
-| purple | yours, passed or no pipeline, and someone left comments you have not resolved or answered |
+| purple | yours, and someone left comments you have not resolved or answered; a failed pipeline still shows red |
 | blue / yellow | one you are reviewing, pipeline passed / failed |
 | ring | pipeline still running |
 
@@ -32,11 +32,11 @@ A system tray icon per merge request, for KDE, XFCE, Cinnamon, MATE, Budgie, Way
 
 ```sh
 git clone https://github.com/KayAugust/merge-requests.git ~/.local/share/merge-requests
-~/.local/share/merge-requests/tray/install
-merge-requests-tray &
+~/.local/share/merge-requests/install.sh
+merge-requests tray &
 ```
 
-It starts with your session from then on. `tray/install --remove` undoes it.
+It starts with your session from then on. `install.sh --remove` undoes it.
 
 ## Services
 
@@ -57,10 +57,18 @@ secret-tool store --label="Bitbucket (merge requests)" merge-requests bitbucket.
 
 and enter `you@example.com:your-token`. Bitbucket is checked every five minutes rather than every minute, to stay inside its rate limit.
 
+When a service cannot be reached, its last answer stays on show, faded, with the reason in the list.
+
 ## Needs
 
-bash 4.4+, jq 1.6+ and curl. The tray also needs Python 3.6+ with PyGObject (`python3-gi`, `python3-gobject` or `python-gobject`); `tray/install` names whatever is missing.
+Python 3.10 or newer. The tray also needs PyGObject (`python3-gi`, `python3-gobject` or `python-gobject`); `install.sh` names whatever is missing.
 
 ## Adding a service
 
-Add an executable to `providers/` that prints a JSON array of merge requests; `lib/merge-request.jq` turns a service's own status words into the orb's states.
+Add a class to `backend/merge_requests/adapters/services/` that says whether it is set up and returns the merge requests it finds, and list it in `backend/merge_requests/wiring.py`. Nothing else changes.
+
+## Tests
+
+```sh
+cd backend && python3 -m unittest
+```
