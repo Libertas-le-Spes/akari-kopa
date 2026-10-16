@@ -81,6 +81,24 @@ class FakeCommandLine:
     def everything_said(self, *arguments: str) -> str:
         return self.said.get(arguments, "")
 
+    def answer(self, *arguments: str) -> str | None:
+        self.asked.append(arguments)
+        return self.said.get(arguments)
+
+    def text(self, *arguments: str) -> str:
+        self.asked.append(arguments)
+        self._settle(arguments)
+        return ""
+
+    def start(self, *arguments: str) -> None:
+        self.asked.append(arguments)
+
+    def _settle(self, arguments: tuple) -> None:
+        if arguments[:2] == ("gsettings", "set"):
+            self.said[("gsettings", "get", arguments[2], arguments[3])] = arguments[4]
+        if arguments[:2] == ("gsettings", "reset"):
+            self.said.pop(("gsettings", "get", arguments[2], arguments[3]), None)
+
     def json(self, *arguments: str):
         self.asked.append(arguments)
         for key, answer in self.answers.items():

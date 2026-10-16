@@ -29,6 +29,11 @@ class Listing:
             [each.not_updated for each in asked if each.not_updated],
         )
 
+    def remembered(self) -> Board:
+        now = self.clock()
+        last = [self.answers.last(service.name) for service in self.services if service.is_set_up()]
+        return Board([found for answer in last if answer for found in answer.merge_requests if found.on_the_bar(now)], [])
+
     def _ask(self, service: Service, now: datetime) -> Asked:
         last = self.answers.last(service.name)
         if last and now - last.given < service.asked_every:

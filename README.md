@@ -20,10 +20,10 @@ omarchy plugin add https://github.com/KayAugust/merge-requests.git --enable --ye
 omarchy bar put kayu.merge-requests --section center
 ```
 
-Optional shortcut in `~/.config/hypr/bindings.lua`:
+For the Super + Ctrl + M shortcut to the list:
 
-```lua
-o.bind("SUPER + CTRL + M", "Merge requests", "omarchy-shell kayu.merge-requests toggle")
+```sh
+~/.config/omarchy/plugins/kayu.merge-requests/backend/bin/merge-requests shortcut
 ```
 
 ## Any other Linux desktop
@@ -36,7 +36,7 @@ git clone https://github.com/KayAugust/merge-requests.git ~/.local/share/merge-r
 merge-requests tray &
 ```
 
-It starts with your session from then on. `install.sh --remove` undoes it.
+It starts with your session from then on, and Super + Ctrl + M opens a list of your merge requests; pick one to open it. The shortcut is set the way your desktop keeps its own: KDE Plasma, GNOME, Budgie, Cinnamon, MATE, Xfce, Hyprland and Sway. The list needs zenity or kdialog. `install.sh --remove` undoes all of it.
 
 ## Services
 
