@@ -1,7 +1,7 @@
 import unittest
 
-from merge_requests.entrypoints.choose.choose import Choose
-from merge_requests.use_cases.listing.listing import Listing
+from akari_kopa.entrypoints.choose.choose import Choose
+from akari_kopa.use_cases.listing.listing import Listing
 from tests.fakes import Clock, FakeAnswers, FakeService, a_merge_request, on_day
 
 

@@ -1,10 +1,10 @@
 import unittest
 
-from merge_requests.adapters.services.azure_devops.azure_devops import AzureDevOps
-from merge_requests.adapters.services.moment import moment
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import FAILED, RUNNING
-from merge_requests.attention.repository.follow_up import SOMEONE_ELSES
+from akari_kopa.adapters.services.azure_devops.azure_devops import AzureDevOps
+from akari_kopa.adapters.services.moment import moment
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import FAILED, RUNNING
+from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
 from tests.fakes import on_day
 
 ORG = "https://dev.azure.com/contoso"

@@ -1,10 +1,10 @@
 import unittest
 
-from merge_requests.adapters.services.gitea.gitea import Gitea
-from merge_requests.adapters.services.gitea.tea import Tea
-from merge_requests.attention.merge_request.role import MINE, REVIEWING
-from merge_requests.attention.pipeline.pipeline import NO_PIPELINE, PASSED
-from merge_requests.attention.repository.follow_up import OWN, SOMEONE_ELSES
+from akari_kopa.adapters.services.gitea.gitea import Gitea
+from akari_kopa.adapters.services.gitea.tea import Tea
+from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE, PASSED
+from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fakes import FakeCommandLine, on_day
 
 REPO = "/repos/them/thing"

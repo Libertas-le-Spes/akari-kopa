@@ -2,8 +2,9 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
-command_path="$HOME/.local/bin/merge-requests"
-autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/merge-requests-tray.desktop"
+command_path="$HOME/.local/bin/akari-kopa"
+short_path="$HOME/.local/bin/akari"
+autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/akari-kopa-tray.desktop"
 
 declare -A packages=(
   [apt-get:python3]=python3 [apt-get:gi]=python3-gi [apt-get:secret-tool]=libsecret-tools
@@ -27,10 +28,10 @@ package_for() {
 }
 
 remove() {
-  pkill -f "python3[^ ]* -m merge_requests tray" || true
-  "$here/backend/bin/merge-requests" remove-shortcut || true
-  rm -f "$command_path" "$autostart"
-  echo "Removed the merge requests tray."
+  pkill -f "python3[^ ]* -m akari_kopa tray" || true
+  "$here/backend/bin/akari-kopa" remove-shortcut || true
+  rm -f "$command_path" "$short_path" "$autostart"
+  echo "Removed the Akari Kopa tray."
 }
 
 missing_packages() {
@@ -41,25 +42,26 @@ missing_packages() {
 
 install_tray() {
   mkdir -p "$(dirname "$command_path")" "$(dirname "$autostart")"
-  ln -sf "$here/backend/bin/merge-requests" "$command_path"
+  ln -sf "$here/backend/bin/akari-kopa" "$command_path"
+  ln -sf "$here/backend/bin/akari-kopa" "$short_path"
   cat > "$autostart" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Merge requests
+Name=Akari Kopa
 Comment=Pipeline and comment state of your merge requests in the system tray
 Exec=$command_path tray
 Terminal=false
 X-GNOME-Autostart-enabled=true
 DESKTOP
-  echo "Installed. It starts with your desktop session; to start it now, run: merge-requests tray &"
+  echo "Installed. It starts with your desktop session; to start it now, run: akari tray &"
 }
 
 found_services() {
   for tool in "${!services[@]}"; do
     command -v "$tool" >/dev/null && echo "${services[$tool]}"
   done
-  secret-tool lookup merge-requests bitbucket.org >/dev/null 2>&1 && echo "Bitbucket (key in the keyring)"
-  secret-tool lookup merge-requests dev.azure.com >/dev/null 2>&1 && echo "Azure DevOps (key in the keyring)"
+  secret-tool lookup akari-kopa bitbucket.org >/dev/null 2>&1 && echo "Bitbucket (key in the keyring)"
+  secret-tool lookup akari-kopa dev.azure.com >/dev/null 2>&1 && echo "Azure DevOps (key in the keyring)"
   true
 }
 

@@ -7,7 +7,7 @@ import qs.Ui
 
 BarWidget {
   id: root
-  moduleName: "kayu.merge-requests"
+  moduleName: "kayu.akari-kopa"
 
   property var board: ({ groups: [], not_updated: [], not_updated_summary: "", not_updated_look: null })
   property bool popupOpen: false
@@ -17,8 +17,8 @@ BarWidget {
 
   function couldNotRun(reason) {
     board = Object.assign({}, board, {
-      not_updated: ["merge-requests: " + reason],
-      not_updated_summary: "Not updated: merge-requests"
+      not_updated: ["akari-kopa: " + reason],
+      not_updated_summary: "Not updated: akari-kopa"
     })
   }
 
@@ -44,7 +44,7 @@ BarWidget {
   implicitHeight: vertical ? orbs.implicitHeight + Style.space(8) : barSize
 
   IpcHandler {
-    target: "kayu.merge-requests"
+    target: "kayu.akari-kopa"
 
     function refresh(): void { root.refresh() }
     function toggle(): void { root.broadcast("toggleOnFocusedScreen") }
@@ -52,7 +52,7 @@ BarWidget {
 
   Process {
     id: fetch
-    command: [decodeURIComponent(Qt.resolvedUrl("../../backend/bin/merge-requests").toString().replace(/^file:\/\//, ""))]
+    command: [decodeURIComponent(Qt.resolvedUrl("../../backend/bin/akari-kopa").toString().replace(/^file:\/\//, ""))]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {

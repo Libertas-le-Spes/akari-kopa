@@ -2,18 +2,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from merge_requests.adapters.shortcuts.cinnamon import Cinnamon
-from merge_requests.adapters.shortcuts.environment import Environment
-from merge_requests.adapters.shortcuts.gnome import PATH, Gnome
-from merge_requests.adapters.shortcuts.gsettings import GSettings
-from merge_requests.adapters.shortcuts.hyprland import HyprlandConf, HyprlandLua, Omarchy
-from merge_requests.adapters.shortcuts.kde import Kde
-from merge_requests.adapters.shortcuts.mate import Mate
-from merge_requests.adapters.shortcuts.sway import Sway
-from merge_requests.adapters.shortcuts.xfce import Xfce
+from akari_kopa.adapters.shortcuts.cinnamon import Cinnamon
+from akari_kopa.adapters.shortcuts.environment import Environment
+from akari_kopa.adapters.shortcuts.gnome import PATH, Gnome
+from akari_kopa.adapters.shortcuts.gsettings import GSettings
+from akari_kopa.adapters.shortcuts.hyprland import HyprlandConf, HyprlandLua, Omarchy
+from akari_kopa.adapters.shortcuts.kde import Kde
+from akari_kopa.adapters.shortcuts.mate import Mate
+from akari_kopa.adapters.shortcuts.sway import Sway
+from akari_kopa.adapters.shortcuts.xfce import Xfce
 from tests.fakes import FakeCommandLine
 
-CHOOSE = "/opt/merge-requests/backend/bin/merge-requests choose"
+CHOOSE = "/opt/akari-kopa/backend/bin/akari-kopa choose"
 
 
 def environment(*desktops: str) -> Environment:
@@ -31,8 +31,8 @@ def config(environment: Environment, relative: str, text: str = "existing = true
 class ConfigFileDesktops(unittest.TestCase):
     def test_each_writes_its_own_line_once_reloads_and_takes_it_out_again(self):
         cases = [
-            (Omarchy, "hypr/bindings.lua", 'o.bind("SUPER + CTRL + M", "Merge requests", "omarchy-shell kayu.merge-requests toggle")', ("hyprctl", "reload")),
-            (HyprlandLua, "hypr/hyprland.lua", f'hl.bind("SUPER + CTRL + M", hl.dsp.exec_cmd("{CHOOSE}"), {{ description = "Merge requests" }})', ("hyprctl", "reload")),
+            (Omarchy, "hypr/bindings.lua", 'o.bind("SUPER + CTRL + M", "Akari Kopa", "omarchy-shell kayu.akari-kopa toggle")', ("hyprctl", "reload")),
+            (HyprlandLua, "hypr/hyprland.lua", f'hl.bind("SUPER + CTRL + M", hl.dsp.exec_cmd("{CHOOSE}"), {{ description = "Akari Kopa" }})', ("hyprctl", "reload")),
             (HyprlandConf, "hypr/hyprland.conf", f"bind = SUPER CTRL, M, exec, {CHOOSE}", ("hyprctl", "reload")),
             (Sway, "sway/config", f"bindsym Mod4+Ctrl+m exec {CHOOSE}", ("swaymsg", "reload")),
         ]
@@ -110,9 +110,9 @@ class SettingsDesktops(unittest.TestCase):
         command_line = FakeCommandLine({"kwriteconfig6"})
         home = Kde(session, command_line, CHOOSE)
         home.add()
-        launcher = (session.data_home / "applications" / "merge-requests-choose.desktop").read_text()
+        launcher = (session.data_home / "applications" / "akari-kopa-choose.desktop").read_text()
         self.assertIn(f"Exec={CHOOSE}\n", launcher)
-        self.assertIn(("kwriteconfig6", "--file", "kglobalshortcutsrc", "--group", "services", "--group", "merge-requests-choose.desktop",
+        self.assertIn(("kwriteconfig6", "--file", "kglobalshortcutsrc", "--group", "services", "--group", "akari-kopa-choose.desktop",
                        "--key", "_launch", "Meta+Ctrl+M"), command_line.asked)
         home.remove()
         self.assertFalse(home.has_it())

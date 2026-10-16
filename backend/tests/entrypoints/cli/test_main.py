@@ -2,7 +2,7 @@ import contextlib
 import io
 import unittest
 
-from merge_requests.entrypoints.cli.main import main
+from akari_kopa.entrypoints.cli.main import main
 
 
 class Main(unittest.TestCase):
@@ -10,4 +10,4 @@ class Main(unittest.TestCase):
         errors = io.StringIO()
         with contextlib.redirect_stderr(errors):
             self.assertEqual(main(["dance"]), 2)
-        self.assertEqual(errors.getvalue(), "merge-requests: say one of board, tray, choose, shortcut, remove-shortcut\n")
+        self.assertEqual(errors.getvalue(), "akari-kopa: say one of board, tray, choose, shortcut, remove-shortcut\n")

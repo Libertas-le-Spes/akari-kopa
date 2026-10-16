@@ -1,4 +1,6 @@
-# Merge requests
+# Akari Kopa
+
+*Akari* is Japanese for a light, *kopa* is Setswana for to ask or request: a light for each of your requests.
 
 One coloured orb per open merge request, in your bar or system tray, so you see when a pipeline breaks without opening a browser.
 
@@ -16,14 +18,14 @@ A merge request to a repository you cannot push to shows for its first three day
 ## Omarchy
 
 ```sh
-omarchy plugin add https://github.com/Libertas-le-Spes/merge-requests.git --enable --yes
-omarchy bar put kayu.merge-requests --section center
+omarchy plugin add https://github.com/Libertas-le-Spes/akari-kopa.git --enable --yes
+omarchy bar put kayu.akari-kopa --section center
 ```
 
 For the Super + Ctrl + M shortcut to the list:
 
 ```sh
-~/.config/omarchy/plugins/kayu.merge-requests/backend/bin/merge-requests shortcut
+~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa shortcut
 ```
 
 ## Any other Linux desktop
@@ -31,10 +33,12 @@ For the Super + Ctrl + M shortcut to the list:
 A system tray icon per merge request, for KDE, XFCE, Cinnamon, MATE, Budgie, Waybar, and GNOME with the AppIndicator extension.
 
 ```sh
-git clone https://github.com/Libertas-le-Spes/merge-requests.git ~/.local/share/merge-requests
-~/.local/share/merge-requests/install.sh
-merge-requests tray &
+git clone https://github.com/Libertas-le-Spes/akari-kopa.git ~/.local/share/akari-kopa
+~/.local/share/akari-kopa/install.sh
+akari tray &
 ```
+
+`akari` is the short form of `akari-kopa`. It is not `kopa`, because an AUR clipboard manager already installs a command by that name.
 
 It starts with your session from then on, and Super + Ctrl + M opens a list of your merge requests; pick one to open it. The shortcut is set the way your desktop keeps its own: KDE Plasma, GNOME, Budgie, Cinnamon, MATE, Xfce, Hyprland and Sway. The list needs zenity or kdialog. `install.sh --remove` undoes all of it.
 
@@ -53,7 +57,7 @@ Each service is read through the tool you already log in with. Bitbucket and Azu
 For Bitbucket, create an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens) with the read scopes for user, workspace, repository, permission and pull request, then:
 
 ```sh
-secret-tool store --label="Bitbucket (merge requests)" merge-requests bitbucket.org
+secret-tool store --label="Bitbucket (merge requests)" akari-kopa bitbucket.org
 ```
 
 and enter `you@example.com:your-token`. Bitbucket is checked every five minutes rather than every minute, to stay inside its rate limit.
@@ -61,7 +65,7 @@ and enter `you@example.com:your-token`. Bitbucket is checked every five minutes 
 For Azure DevOps, create a [personal access token](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate) for **all accessible organizations** with the read scopes for code, build, security and user profile, then:
 
 ```sh
-secret-tool store --label="Azure DevOps (merge requests)" merge-requests dev.azure.com
+secret-tool store --label="Azure DevOps (merge requests)" akari-kopa dev.azure.com
 ```
 
 and enter the token. Every organisation you belong to is read, and a pull request's pipeline is the builds Azure Pipelines ran for it.
@@ -74,7 +78,7 @@ Python 3.10 or newer. The tray also needs PyGObject (`python3-gi`, `python3-gobj
 
 ## Adding a service
 
-Add a class to `backend/merge_requests/adapters/services/` that says whether it is set up and returns the merge requests it finds, and list it in `backend/merge_requests/wiring.py`. Nothing else changes.
+Add a class to `backend/akari_kopa/adapters/services/` that says whether it is set up and returns the merge requests it finds, and list it in `backend/akari_kopa/wiring.py`. Nothing else changes.
 
 ## Tests
 

@@ -1,7 +1,7 @@
 import unittest
 
-from merge_requests.attention.merge_request.merge_request import COMMENTS
-from merge_requests.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING
+from akari_kopa.attention.merge_request.merge_request import COMMENTS
+from akari_kopa.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING
 from tests.fakes import a_merge_request, commented_on
 
 

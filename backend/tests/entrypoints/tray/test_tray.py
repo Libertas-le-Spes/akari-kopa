@@ -1,8 +1,8 @@
 import unittest
 
-from merge_requests.attention.pipeline.pipeline import FAILED
-from merge_requests.entrypoints.tray.tray import Tray
-from merge_requests.use_cases.listing.listing import Listing
+from akari_kopa.attention.pipeline.pipeline import FAILED
+from akari_kopa.entrypoints.tray.tray import Tray
+from akari_kopa.use_cases.listing.listing import Listing
 from tests.fakes import Clock, FakeAnswers, FakeService, a_merge_request, on_day
 
 

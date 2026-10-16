@@ -2,11 +2,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from merge_requests.adapters.storage.answer_folder import AnswerFolder
-from merge_requests.attention.conversation.conversation import Conversation
-from merge_requests.attention.merge_request.role import REVIEWING
-from merge_requests.attention.pipeline.pipeline import RUNNING
-from merge_requests.attention.repository.follow_up import SOMEONE_ELSES
+from akari_kopa.adapters.storage.answer_folder import AnswerFolder
+from akari_kopa.attention.conversation.conversation import Conversation
+from akari_kopa.attention.merge_request.role import REVIEWING
+from akari_kopa.attention.pipeline.pipeline import RUNNING
+from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
 from tests.fakes import a_merge_request, on_day
 
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "kayu.merge-requests",
-  "name": "Merge requests",
-  "version": "2.0.0",
+  "id": "kayu.akari-kopa",
+  "name": "Akari Kopa",
+  "version": "3.0.0",
   "author": "kayu",
   "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea, Bitbucket and Azure DevOps",
   "kinds": [
@@ -12,7 +12,7 @@
     "barWidget": "frontend/omarchy-bar/BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Merge requests",
+    "displayName": "Akari Kopa",
     "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea, Bitbucket and Azure DevOps",
     "category": "Development",
     "allowMultiple": false,

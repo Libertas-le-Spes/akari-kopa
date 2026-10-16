@@ -1,6 +1,6 @@
 import unittest
 
-from merge_requests.attention.conversation.conversation import QUIET, Conversation
+from akari_kopa.attention.conversation.conversation import QUIET, Conversation
 from tests.fakes import on_day
 
 

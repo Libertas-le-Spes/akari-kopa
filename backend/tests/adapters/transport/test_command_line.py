@@ -1,9 +1,9 @@
 import unittest
 
-from merge_requests.adapters.transport.command_line import CommandLine
-from merge_requests.use_cases.listing.ports import ServiceError
+from akari_kopa.adapters.transport.command_line import CommandLine
+from akari_kopa.use_cases.listing.ports import ServiceError
 
-MISSING = "merge-requests-no-such-tool"
+MISSING = "akari-kopa-no-such-tool"
 
 
 class MissingTools(unittest.TestCase):

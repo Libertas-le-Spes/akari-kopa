@@ -1,6 +1,6 @@
 import unittest
 
-from merge_requests.use_cases.shortcut.shortcut_setup import NoShortcutHome, ShortcutSetup
+from akari_kopa.use_cases.shortcut.shortcut_setup import NoShortcutHome, ShortcutSetup
 
 
 class MadeUpDesktop:
