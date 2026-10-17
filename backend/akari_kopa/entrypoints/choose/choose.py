@@ -15,7 +15,7 @@ class Choose:
         if self.chooser is None:
             return "akari-kopa: install zenity or kdialog to choose a merge request from a list"
         view = self._view()
-        options = [Option(mr.key, mr.summary, f"{mr.title} · {mr.details}") for mr in view.merge_requests()]
+        options = [Option(mr.key, mr.summary, f"{mr.title} · {mr.service} · {mr.details}") for mr in view.merge_requests()]
         chosen = self.chooser.choose(TITLE, _question(options), options)
         self._open(view, chosen)
         return ""

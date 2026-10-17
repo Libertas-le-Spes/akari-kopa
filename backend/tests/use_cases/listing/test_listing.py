@@ -62,6 +62,7 @@ class AMadeUpService(unittest.TestCase):
     def test_a_new_kind_of_service_needs_nothing_but_its_own_class(self):
         class Notebook:
             name = "notebook"
+            heading = "Notebook"
             asked_every = timedelta(0)
 
             def is_set_up(self):

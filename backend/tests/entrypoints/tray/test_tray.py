@@ -72,7 +72,7 @@ class TrayTest(unittest.TestCase):
         self.forge.answer = []
         self.forge.fails("offline")
         self.tray.check()
-        self.assertEqual([icon.content.title for icon in self.desktop.live().values()], ["Not updated: forge"])
+        self.assertEqual([icon.content.title for icon in self.desktop.live().values()], ["Not updated: Forge"])
 
     def test_clicking_open_in_browser_opens_that_merge_request(self):
         self.tray.check()

@@ -15,7 +15,7 @@ class IconContents:
         return wanted or self._only_not_updated(view)
 
     def _merge_request(self, merge_request: MergeRequestView, view: BoardView) -> IconContent:
-        description = f"{merge_request.title}\n{merge_request.details}"
+        description = f"{merge_request.title}\n{merge_request.service} · {merge_request.details}"
         opening = lambda: self.desktop.open_in_browser(merge_request.url)
         return IconContent(
             title=merge_request.summary,
@@ -24,7 +24,7 @@ class IconContents:
             menu=[
                 MenuEntry(merge_request.summary, opening),
                 MenuEntry(merge_request.title),
-                MenuEntry(merge_request.details),
+                MenuEntry(f"{merge_request.service} · {merge_request.details}"),
                 SEPARATOR,
                 MenuEntry("Open in browser", opening),
                 MenuEntry("Check now", self.check_now),

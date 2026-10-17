@@ -18,6 +18,7 @@ CONTRIBUTE = 4
 
 class AzureDevOps:
     name = "azure-devops"
+    heading = "Azure DevOps"
     asked_every = timedelta(0)
 
     def __init__(self, az: Az, connect: Callable[[str, str], Https]):

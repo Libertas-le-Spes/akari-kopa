@@ -18,6 +18,7 @@ def reason_for(error: Exception) -> str:
 
 class Service(Protocol):
     name: str
+    heading: str
     asked_every: timedelta
 
     def is_set_up(self) -> bool: ...
