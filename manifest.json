@@ -4,7 +4,7 @@
   "name": "Akari Kopa",
   "version": "3.0.0",
   "author": "kayu",
-  "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Azure DevOps",
+  "description": "Pipeline and comment state of your open merge requests and the ones you are reviewing, from GitLab, GitHub, Gitea and Azure DevOps",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
   },
   "barWidget": {
     "displayName": "Akari Kopa",
-    "description": "Pipeline and comment state of my open merge requests and the ones I am reviewing, from GitLab, GitHub, Gitea and Azure DevOps",
+    "description": "Pipeline and comment state of your open merge requests and the ones you are reviewing, from GitLab, GitHub, Gitea and Azure DevOps",
     "category": "Development",
     "allowMultiple": false,
     "defaults": {
