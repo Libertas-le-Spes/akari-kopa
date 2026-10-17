@@ -7,10 +7,10 @@ short_path="$HOME/.local/bin/akari"
 autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/akari-kopa-tray.desktop"
 
 declare -A packages=(
-  [apt-get:python3]=python3 [apt-get:gi]=python3-gi [apt-get:secret-tool]=libsecret-tools
-  [dnf:python3]=python3 [dnf:gi]=python3-gobject [dnf:secret-tool]=libsecret
-  [pacman:python3]=python [pacman:gi]=python-gobject [pacman:secret-tool]=libsecret
-  [zypper:python3]=python3 [zypper:gi]=python3-gobject [zypper:secret-tool]=libsecret-tools
+  [apt-get:python3]=python3 [apt-get:gi]=python3-gi
+  [dnf:python3]=python3 [dnf:gi]=python3-gobject
+  [pacman:python3]=python [pacman:gi]=python-gobject
+  [zypper:python3]=python3 [zypper:gi]=python3-gobject
 )
 
 declare -A services=(
@@ -60,7 +60,6 @@ found_services() {
   for tool in "${!services[@]}"; do
     command -v "$tool" >/dev/null && echo "${services[$tool]}"
   done
-  secret-tool lookup akari-kopa bitbucket.org >/dev/null 2>&1 && echo "Bitbucket (key in the keyring)"
   true
 }
 
