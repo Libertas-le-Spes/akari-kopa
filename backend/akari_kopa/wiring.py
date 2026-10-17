@@ -5,10 +5,8 @@ from pathlib import Path
 from akari_kopa.adapters.dialogs.kdialog import Kdialog
 from akari_kopa.adapters.dialogs.xdg_browser import XdgBrowser
 from akari_kopa.adapters.dialogs.zenity import Zenity
-from akari_kopa.adapters.keyring.secret_tool import SecretTool
 from akari_kopa.adapters.services.azure_devops.az import Az
 from akari_kopa.adapters.services.azure_devops.azure_devops import AzureDevOps
-from akari_kopa.adapters.services.bitbucket.bitbucket import Bitbucket
 from akari_kopa.adapters.services.gitea.gitea import Gitea
 from akari_kopa.adapters.services.gitea.tea import Tea
 from akari_kopa.adapters.services.github.github import GitHub
@@ -48,13 +46,12 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def services(command_line: CommandLine, clock: Clock) -> list[Service]:
+def services(command_line: CommandLine) -> list[Service]:
     return [
         GitLab(GraphQlCli(command_line, "glab")),
         GitHub(GraphQlCli(command_line, "gh")),
         Gitea(Tea(command_line)),
-        Bitbucket(SecretTool(command_line), Https.basic, clock),
-        AzureDevOps(Az(command_line), Https.bearer),
+        AzureDevOps(Az(command_line), Https),
     ]
 
 
@@ -81,7 +78,7 @@ def shortcut_homes(environment: Environment, command_line: CommandLine) -> list:
 def open_app(answers: Path | None = None, clock: Clock = utc_now, command_line: CommandLine | None = None,
              environment: Environment | None = None) -> App:
     command_line = command_line or CommandLine()
-    listing = Listing(services(command_line, clock), AnswerFolder(answers or locations.answer_folder()), clock)
+    listing = Listing(services(command_line), AnswerFolder(answers or locations.answer_folder()), clock)
     homes = shortcut_homes(environment or this_session(), command_line)
     return App(listing, chooser(command_line), XdgBrowser(command_line), ShortcutSetup(homes))
 

@@ -44,23 +44,14 @@ It starts with your session from then on, and Super + Ctrl + M opens a list of y
 
 ## Services
 
-Each service is read through the tool you already log in with. Bitbucket has no such tool, so its key goes in the system keyring.
+Each service is read through the tool you already log in with.
 
 | Service | Log in with |
 |---|---|
 | GitLab, including self-hosted | `glab auth login` |
 | GitHub, including Enterprise | `gh auth login` |
 | Gitea, Forgejo, Codeberg | `tea login add` (tea 0.12 or newer) |
-| Bitbucket Cloud | an API token in the keyring, below |
 | Azure DevOps | `az login` (the Azure CLI), below |
-
-For Bitbucket, create an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens) with the read scopes for user, workspace, repository, permission and pull request, then:
-
-```sh
-secret-tool store --label="Bitbucket (merge requests)" akari-kopa bitbucket.org
-```
-
-and enter `you@example.com:your-token`. Bitbucket is checked every five minutes rather than every minute, to stay inside its rate limit.
 
 For Azure DevOps, log in to the Azure CLI with the account you use there:
 
