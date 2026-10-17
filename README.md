@@ -4,6 +4,8 @@
 
 One coloured orb per open merge request, in your bar or system tray, so you see when a pipeline breaks without opening a browser.
 
+![The orbs on the bar and the list they open, split by service](preview.png)
+
 | Orb | Meaning |
 |---|---|
 | green / red | your merge request, pipeline passed / failed; green too when it has no pipeline |
@@ -26,6 +28,13 @@ For the Super + Ctrl + M shortcut to the list:
 
 ```sh
 ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa shortcut
+```
+
+To remove it, take the shortcut out, then the plugin:
+
+```sh
+~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa remove-shortcut
+omarchy plugin remove kayu.akari-kopa --yes
 ```
 
 ## Any other Linux desktop
