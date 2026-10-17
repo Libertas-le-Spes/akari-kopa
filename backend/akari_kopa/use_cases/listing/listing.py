@@ -27,12 +27,16 @@ class Listing:
         return Board(
             [merge_request for each in asked for merge_request in each.merge_requests if merge_request.on_the_bar(now)],
             [each.not_updated for each in asked if each.not_updated],
+            self._headings(),
         )
 
     def remembered(self) -> Board:
         now = self.clock()
         last = [self.answers.last(service.name) for service in self.services if service.is_set_up()]
-        return Board([found for answer in last if answer for found in answer.merge_requests if found.on_the_bar(now)], [])
+        return Board([found for answer in last if answer for found in answer.merge_requests if found.on_the_bar(now)], [], self._headings())
+
+    def _headings(self) -> dict[str, str]:
+        return {service.name: service.heading for service in self.services}
 
     def _ask(self, service: Service, now: datetime) -> Asked:
         last = self.answers.last(service.name)

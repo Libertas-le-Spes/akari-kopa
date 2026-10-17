@@ -10,6 +10,7 @@ from akari_kopa.attention.merge_request.role import MINE, REVIEWING
 
 class GitHub:
     name = "github"
+    heading = "GitHub"
     asked_every = timedelta(0)
 
     def __init__(self, cli: GraphQlCli):

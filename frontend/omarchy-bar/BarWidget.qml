@@ -12,7 +12,7 @@ BarWidget {
   property var board: ({ groups: [], not_updated: [], not_updated_summary: "", not_updated_look: null })
   property bool popupOpen: false
 
-  readonly property var mergeRequests: board.groups.reduce(function(all, group) { return all.concat(group.merge_requests) }, [])
+  readonly property var mergeRequests: board.groups.reduce(function(all, group) { return group.services.reduce(function(found, service) { return found.concat(service.merge_requests) }, all) }, [])
   readonly property bool stale: board.not_updated.length > 0
 
   function couldNotRun(reason) {
@@ -134,14 +134,29 @@ BarWidget {
           }
 
           Repeater {
-            model: modelData.merge_requests
+            model: modelData.services
 
-            MergeRequestLine {
+            Column {
               required property var modelData
               width: sections.width
-              bar: root.bar
-              mergeRequest: modelData
-              onChosen: root.openInBrowser(modelData)
+              spacing: Style.space(2)
+
+              ServiceHeading {
+                bar: root.bar
+                text: modelData.heading
+              }
+
+              Repeater {
+                model: modelData.merge_requests
+
+                MergeRequestLine {
+                  required property var modelData
+                  width: sections.width
+                  bar: root.bar
+                  mergeRequest: modelData
+                  onChosen: root.openInBrowser(modelData)
+                }
+              }
             }
           }
         }

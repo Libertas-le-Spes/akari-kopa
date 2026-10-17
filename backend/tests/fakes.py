@@ -35,6 +35,7 @@ class Clock:
 class FakeService:
     def __init__(self, name: str, *merge_requests: MergeRequest, asked_every: timedelta = timedelta(0)):
         self.name = name
+        self.heading = name.title()
         self.asked_every = asked_every
         self.answer = list(merge_requests)
         self.failure: Exception | None = None
