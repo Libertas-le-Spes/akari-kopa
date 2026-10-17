@@ -24,16 +24,20 @@ omarchy plugin add https://github.com/Libertas-le-Spes/akari-kopa.git --enable -
 omarchy bar put kayu.akari-kopa --section center
 ```
 
-For the Super + Ctrl + M shortcut to the list:
+For the `akari-kopa` command, its short form `akari`, and the Super + Ctrl + M shortcut to the list:
 
 ```sh
-~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa shortcut
+mkdir -p ~/.local/bin
+ln -sf ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari-kopa
+ln -sf ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari
+akari shortcut
 ```
 
-To remove it, take the shortcut out, then the plugin:
+To remove it, take the shortcut and the commands out, then the plugin:
 
 ```sh
-~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa remove-shortcut
+akari remove-shortcut
+rm -f ~/.local/bin/akari ~/.local/bin/akari-kopa
 omarchy plugin remove kayu.akari-kopa --yes
 ```
 
