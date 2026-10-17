@@ -33,6 +33,13 @@ ln -sf ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local
 akari shortcut
 ```
 
+To update, then restart the bar, which only loads a plugin's new code when it starts:
+
+```sh
+omarchy plugin update kayu.akari-kopa --yes
+omarchy-restart-shell
+```
+
 To remove it, take the shortcut and the commands out, then the plugin:
 
 ```sh
