@@ -6,6 +6,7 @@ from akari_kopa.adapters.dialogs.kdialog import Kdialog
 from akari_kopa.adapters.dialogs.xdg_browser import XdgBrowser
 from akari_kopa.adapters.dialogs.zenity import Zenity
 from akari_kopa.adapters.keyring.secret_tool import SecretTool
+from akari_kopa.adapters.services.azure_devops.az import Az
 from akari_kopa.adapters.services.azure_devops.azure_devops import AzureDevOps
 from akari_kopa.adapters.services.bitbucket.bitbucket import Bitbucket
 from akari_kopa.adapters.services.gitea.gitea import Gitea
@@ -52,8 +53,8 @@ def services(command_line: CommandLine, clock: Clock) -> list[Service]:
         GitLab(GraphQlCli(command_line, "glab")),
         GitHub(GraphQlCli(command_line, "gh")),
         Gitea(Tea(command_line)),
-        Bitbucket(SecretTool(command_line), Https, clock),
-        AzureDevOps(SecretTool(command_line), Https),
+        Bitbucket(SecretTool(command_line), Https.basic, clock),
+        AzureDevOps(Az(command_line), Https.bearer),
     ]
 
 

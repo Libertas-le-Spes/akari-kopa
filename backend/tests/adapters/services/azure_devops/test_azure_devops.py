@@ -1,14 +1,16 @@
 import unittest
 
+from akari_kopa.adapters.services.azure_devops.az import AZURE_DEVOPS, Az
 from akari_kopa.adapters.services.azure_devops.azure_devops import AzureDevOps
 from akari_kopa.adapters.services.moment import moment
 from akari_kopa.attention.merge_request.role import MINE, REVIEWING
 from akari_kopa.attention.pipeline.pipeline import FAILED, RUNNING
 from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
-from tests.fakes import on_day
+from tests.fakes import FakeCommandLine, on_day
 
 ORG = "https://dev.azure.com/contoso"
 PULL_REQUEST = f"{ORG}/p1/_apis/git/repositories/r1/pullRequests"
+TOKEN = ("az", "account", "get-access-token", "--resource", AZURE_DEVOPS, "--query", "accessToken", "--output", "tsv")
 
 
 def at(day: float) -> str:
@@ -42,8 +44,8 @@ GETS = {
 
 
 class FakeHttps:
-    def __init__(self, base: str, credentials: str):
-        self.credentials = credentials
+    def __init__(self, base: str, token: str):
+        self.token = token
         self.posted = []
 
     def get(self, path: str, **parameters: str):
@@ -59,25 +61,22 @@ class FakeHttps:
         return {"evaluations": [{"value": False}]}
 
 
-class FakeKeyring:
-    def __init__(self, stored: str):
-        self.stored = stored
-
-    def lookup(self, attribute: str, value: str) -> str:
-        return self.stored
+def az(installed: bool = True, token: str | None = "token") -> Az:
+    said = {TOKEN: token} if token else {}
+    return Az(FakeCommandLine({"az"} if installed else set(), said=said))
 
 
 class AzureDevOpsTest(unittest.TestCase):
     def setUp(self):
         self.connected = []
-        self.found = AzureDevOps(FakeKeyring("token"), self._connect).merge_requests()
+        self.found = AzureDevOps(az(), self._connect).merge_requests()
 
-    def _connect(self, base, credentials):
-        self.connected.append(FakeHttps(base, credentials))
+    def _connect(self, base, token):
+        self.connected.append(FakeHttps(base, token))
         return self.connected[-1]
 
-    def test_the_token_is_sent_as_azure_devops_expects(self):
-        self.assertEqual(self.connected[0].credentials, ":token")
+    def test_the_token_az_gives_is_the_one_sent(self):
+        self.assertEqual(self.connected[0].token, "token")
 
     def test_mine_and_the_one_i_review_in_every_organisation(self):
         self.assertEqual([(each.reference, each.role, each.author) for each in self.found], [("!7", MINE, "Me Myself"), ("!8", REVIEWING, "Ana")])
@@ -95,5 +94,9 @@ class AzureDevOpsTest(unittest.TestCase):
         self.assertEqual((conversation.unresolved_threads, conversation.comments), ((moment(at(2)),), (moment(at(3)),)))
         self.assertEqual(conversation.last_answer, moment(at(3.5)))
 
-    def test_without_a_token_in_the_keyring_it_is_not_set_up(self):
-        self.assertFalse(AzureDevOps(FakeKeyring(""), FakeHttps).is_set_up())
+    def test_without_az_it_is_not_set_up(self):
+        self.assertFalse(AzureDevOps(az(installed=False), FakeHttps).is_set_up())
+
+    def test_with_az_not_logged_in_nothing_is_asked_of_azure_devops(self):
+        self.assertEqual(AzureDevOps(az(token=None), self._connect).merge_requests(), [])
+        self.assertEqual(len(self.connected), 1)

@@ -14,7 +14,7 @@ declare -A packages=(
 )
 
 declare -A services=(
-  [glab]="GitLab (glab)" [gh]="GitHub (gh)" [tea]="Gitea/Forgejo (tea)"
+  [glab]="GitLab (glab)" [gh]="GitHub (gh)" [tea]="Gitea/Forgejo (tea)" [az]="Azure DevOps (az)"
 )
 
 package_manager() {
@@ -61,7 +61,6 @@ found_services() {
     command -v "$tool" >/dev/null && echo "${services[$tool]}"
   done
   secret-tool lookup akari-kopa bitbucket.org >/dev/null 2>&1 && echo "Bitbucket (key in the keyring)"
-  secret-tool lookup akari-kopa dev.azure.com >/dev/null 2>&1 && echo "Azure DevOps (key in the keyring)"
   true
 }
 
@@ -79,4 +78,4 @@ fi
 install_tray
 "$command_path" shortcut || true
 readable=$(found_services | sort | paste -sd ',' | sed 's/,/, /g')
-echo "Services it can read: ${readable:-none yet; install and log in to glab, gh or tea (0.12+)}"
+echo "Services it can read: ${readable:-none yet; install and log in to glab, gh, tea (0.12+) or az}"

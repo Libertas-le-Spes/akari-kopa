@@ -10,9 +10,17 @@ TIMEOUT_SECONDS = 30
 
 
 class Https:
-    def __init__(self, base: str, credentials: str):
+    def __init__(self, base: str, authorization: str):
         self.base = base
-        self.authorization = "Basic " + base64.b64encode(credentials.encode()).decode()
+        self.authorization = authorization
+
+    @classmethod
+    def basic(cls, base: str, credentials: str) -> "Https":
+        return cls(base, "Basic " + base64.b64encode(credentials.encode()).decode())
+
+    @classmethod
+    def bearer(cls, base: str, token: str) -> "Https":
+        return cls(base, "Bearer " + token)
 
     def get(self, path: str, **parameters: str):
         return self._fetch(self.base + path + _query(parameters))
@@ -42,7 +50,7 @@ class Https:
 
 def _data(answer, url: str):
     if answer.headers.get_content_type() != "application/json":
-        raise ServiceError(f"{urllib.parse.urlsplit(url).netloc} answered with a web page, not data: the key in the keyring may be wrong or expired")
+        raise ServiceError(f"{urllib.parse.urlsplit(url).netloc} answered with a web page, not data: the login or key may be wrong or expired")
     return json.load(answer)
 
 

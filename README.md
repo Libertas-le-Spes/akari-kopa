@@ -44,7 +44,7 @@ It starts with your session from then on, and Super + Ctrl + M opens a list of y
 
 ## Services
 
-Each service is read through the tool you already log in with. Bitbucket and Azure DevOps have no such tool, so their key goes in the system keyring.
+Each service is read through the tool you already log in with. Bitbucket has no such tool, so its key goes in the system keyring.
 
 | Service | Log in with |
 |---|---|
@@ -52,7 +52,7 @@ Each service is read through the tool you already log in with. Bitbucket and Azu
 | GitHub, including Enterprise | `gh auth login` |
 | Gitea, Forgejo, Codeberg | `tea login add` (tea 0.12 or newer) |
 | Bitbucket Cloud | an API token in the keyring, below |
-| Azure DevOps | a personal access token in the keyring, below |
+| Azure DevOps | `az login` (the Azure CLI), below |
 
 For Bitbucket, create an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens) with the read scopes for user, workspace, repository, permission and pull request, then:
 
@@ -62,13 +62,13 @@ secret-tool store --label="Bitbucket (merge requests)" akari-kopa bitbucket.org
 
 and enter `you@example.com:your-token`. Bitbucket is checked every five minutes rather than every minute, to stay inside its rate limit.
 
-For Azure DevOps, create a [personal access token](https://learn.microsoft.com/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate) for **all accessible organizations** with the read scopes for code, build, security and user profile, then:
+For Azure DevOps, log in to the Azure CLI with the account you use there:
 
 ```sh
-secret-tool store --label="Azure DevOps (merge requests)" akari-kopa dev.azure.com
+az login --allow-no-subscriptions
 ```
 
-and enter the token. Every organisation you belong to is read, and a pull request's pipeline is the builds Azure Pipelines ran for it.
+`--allow-no-subscriptions` lets an account that uses Azure DevOps but no other Azure service log in. Every organisation you belong to is read, and a pull request's pipeline is the builds Azure Pipelines ran for it.
 
 When a service cannot be reached, its last answer stays on show, faded, with the reason in the list.
 
