@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Callable
 from urllib.parse import quote
 
-from akari_kopa.adapters.keyring.secret_tool import SecretTool
+from akari_kopa.adapters.services.azure_devops.az import Az
 from akari_kopa.adapters.services.azure_devops.reading import ConversationReading, merge_request, repository_of
 from akari_kopa.adapters.transport.https import Https
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
@@ -12,7 +12,6 @@ from akari_kopa.attention.merge_request.role import MINE, REVIEWING
 PROFILES = "https://app.vssps.visualstudio.com/_apis"
 ORGANISATIONS = "https://dev.azure.com"
 VERSION = "7.1"
-KEYRING = ("akari-kopa", "dev.azure.com")
 GIT_REPOSITORIES_SECURITY = "2e9eb7ed-3c0a-47d4-87c1-0ffdd275fd87"
 CONTRIBUTE = 4
 
@@ -21,15 +20,18 @@ class AzureDevOps:
     name = "azure-devops"
     asked_every = timedelta(0)
 
-    def __init__(self, keyring: SecretTool, connect: Callable[[str, str], Https]):
-        self.keyring = keyring
+    def __init__(self, az: Az, connect: Callable[[str, str], Https]):
+        self.az = az
         self.connect = connect
 
     def is_set_up(self) -> bool:
-        return bool(self.keyring.lookup(*KEYRING))
+        return self.az.installed()
 
     def merge_requests(self) -> list[MergeRequest]:
-        api = self.connect("", ":" + self.keyring.lookup(*KEYRING))
+        token = self.az.access_token()
+        if not token:
+            return []
+        api = self.connect("", token)
         me = api.get(f"{PROFILES}/profile/profiles/me", **{"api-version": VERSION})["id"]
         organisations = api.get(f"{PROFILES}/accounts", memberId=me, **{"api-version": VERSION})["value"]
         reading = ConversationReading(me)
