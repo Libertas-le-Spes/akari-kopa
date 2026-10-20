@@ -1,20 +1,23 @@
 import QtQuick
 import qs.Commons
+import qs.Ui
 
 Item {
   id: line
 
   property var bar
   property var mergeRequest
+  property bool current: false
 
   signal chosen()
+  signal pointedAt()
 
   height: info.implicitHeight + Style.space(6)
 
-  Rectangle {
+  CursorSurface {
     anchors.fill: parent
-    radius: Style.space(4)
-    color: hover.containsMouse ? Style.hoverFill : "transparent"
+    foreground: line.bar.foreground
+    hasCursor: line.current
   }
 
   Row {
@@ -60,6 +63,7 @@ Item {
     anchors.fill: parent
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
+    onContainsMouseChanged: if (containsMouse) line.pointedAt()
     onClicked: line.chosen()
   }
 }

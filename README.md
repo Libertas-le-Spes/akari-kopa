@@ -13,7 +13,7 @@ One coloured orb per open merge request, in your bar or system tray, so you see 
 | blue / yellow | one you are reviewing, pipeline passed / failed |
 | ring | pipeline still running |
 
-Hover shows the number and author; a click lists them and opens one. A pipeline waiting on manual jobs counts as passed. An orb leaves once its merge request merges or closes.
+Hover shows the number and author; a click lists them and opens one. In the list, ↑ and ↓ move between them, wrapping round at either end, Enter opens the one lit, and Esc closes it. A pipeline waiting on manual jobs counts as passed. An orb leaves once its merge request merges or closes.
 
 A merge request to a repository you cannot push to shows for its first three days, then steps aside: maintainers there answer when they answer. It is looked at again on days 5 and 7, then weekly, and comes back only if comments are waiting for you. On day 31 it is let go.
 
