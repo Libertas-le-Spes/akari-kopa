@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "kayu.akari-kopa",
   "name": "Akari Kopa",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "author": "kayu",
   "description": "Pipeline and comment state of your open merge requests and the ones you are reviewing, from GitLab, GitHub, Gitea and Azure DevOps",
   "kinds": [

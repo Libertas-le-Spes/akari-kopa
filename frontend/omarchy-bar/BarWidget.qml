@@ -106,87 +106,13 @@ BarWidget {
     }
   }
 
-  PopupCard {
-    id: popup
+  MergeRequestList {
     anchorItem: root
-    bar: root.bar
     owner: root
+    bar: root.bar
     open: root.popupOpen
-    contentWidth: popup.fittedContentWidth(Style.space(340))
-    contentHeight: popup.fittedContentHeight(sections.implicitHeight)
-
-    Column {
-      id: sections
-      anchors.fill: parent
-      spacing: Style.space(12)
-
-      Repeater {
-        model: root.board.groups
-
-        Column {
-          required property var modelData
-          width: sections.width
-          spacing: Style.space(4)
-
-          Heading {
-            bar: root.bar
-            text: modelData.heading
-          }
-
-          Repeater {
-            model: modelData.services
-
-            Column {
-              required property var modelData
-              width: sections.width
-              spacing: Style.space(2)
-
-              ServiceHeading {
-                bar: root.bar
-                text: modelData.heading
-              }
-
-              Repeater {
-                model: modelData.merge_requests
-
-                MergeRequestLine {
-                  required property var modelData
-                  width: sections.width
-                  bar: root.bar
-                  mergeRequest: modelData
-                  onChosen: root.openInBrowser(modelData)
-                }
-              }
-            }
-          }
-        }
-      }
-
-      Column {
-        width: sections.width
-        spacing: Style.space(4)
-        visible: root.stale
-
-        Heading {
-          bar: root.bar
-          text: "Not updated"
-        }
-
-        Repeater {
-          model: root.board.not_updated
-
-          Text {
-            required property var modelData
-            textFormat: Text.PlainText
-            text: modelData
-            color: Qt.darker(root.bar.foreground, 1.4)
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.Wrap
-            width: sections.width
-          }
-        }
-      }
-    }
+    board: root.board
+    mergeRequests: root.mergeRequests
+    onChosen: function(mergeRequest) { root.openInBrowser(mergeRequest) }
   }
 }
