@@ -22,7 +22,7 @@ class AnswerFolder:
         try:
             raw = json.loads(self.folder.read(f"{service}.json"))
             return StoredAnswer(_decoded_all(raw["mergeRequests"]), datetime.fromisoformat(raw["given"]))
-        except (OSError, ValueError, KeyError, TypeError):
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
             return None
 
     def keep(self, service: str, merge_requests: list[MergeRequest], given: datetime) -> None:

@@ -451,7 +451,7 @@ Sources: [GitHub: security hardening for GitHub Actions](https://docs.github.com
 | Server values in Gitea API paths | `tea api` paths include the repository name and commit the server gave. They can only point at another path on the same server, which already chose the answers; left as they are. |
 | GraphQL errors | Calling `glab` by path no longer turns a GraphQL error into a failure, so the transport now reports any `errors` in an answer itself. |
 | Old caches | A cache written before this branch has no host stored with each address. It is not used; the next reading replaces it. |
-| Tests | No test writes a file, runs a shell or opens a browser. Each fix was taken out in turn and a test then failed: the host and scheme checks, the bar's guard, the unredirected header, the host list, the redirect refusal, the time limit, the markup escape, the folder owner check, the cache file's type and owner check, opening it without waiting on a pipe, exclusive file creation, the cache re-check, the changed-meanwhile check, the install path check, `-I`, GraphQL on standard input and relative XDG paths. |
+| Tests | No test writes a file, runs a shell or opens a browser. Each fix was taken out in turn and a test then failed: the host and scheme checks, the bar's guard, the unredirected header, the host list, the redirect refusal, the time limit, the markup escape, the folder owner check, the cache file's type and owner check, opening it without waiting on a pipe, closing a refused one, exclusive file creation, the cache re-check, the changed-meanwhile check, the install path check, `-I`, GraphQL on standard input and relative XDG paths. |
 
 ## Plan: what is left
 

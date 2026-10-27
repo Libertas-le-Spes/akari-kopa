@@ -23,7 +23,7 @@ class GraphQlCli:
                 hosts.append(host)
         return hosts
 
-    def ask(self, host: str, query: str, **variables: str) -> dict:
+    def ask(self, host: str, query: str, variables: dict[str, str]) -> dict:
         body = json.dumps({"query": query, "variables": variables})
         answer = self.command_line.json(self.tool, "api", "--hostname", host, "--method", "POST", "--header", JSON_BODY,
                                         self.endpoint, "--input", "-", given=body)
@@ -34,7 +34,14 @@ class GraphQlCli:
 def _refuse_errors(tool: str, answer: dict) -> None:
     errors = answer.get("errors")
     if errors:
-        raise ServiceError(f"{tool}: {errors[0].get('message', 'the query was refused')}")
+        raise ServiceError(f"{tool}: {_first_message(errors)}")
+
+
+def _first_message(errors: list[dict]) -> str:
+    first = errors[0]
+    if "message" in first:
+        return first["message"]
+    return "the query was refused"
 
 
 def _named_hosts(said: str) -> list[str]:

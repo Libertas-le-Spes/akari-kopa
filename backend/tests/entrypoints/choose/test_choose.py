@@ -36,12 +36,12 @@ class ChooseTest(unittest.TestCase):
         self.browser = FakeBrowser()
 
     def test_the_one_picked_opens_in_the_browser(self):
-        Choose(self.listing, FakeChooser("forge me/thing #1"), self.browser).run()
+        Choose(self.listing, FakeChooser("forge forge.example me/thing #1"), self.browser).run()
         self.assertEqual(self.browser.opened, [FORGE_PAGE])
 
     def test_picking_one_whose_address_was_refused_opens_nothing(self):
         self.forge.answer = [a_merge_request(reference="#1", address=RefusedAddress("only https addresses are opened", "forge.example"))]
-        Choose(self.listing, FakeChooser("forge me/thing #1"), self.browser).run()
+        Choose(self.listing, FakeChooser("forge forge.example me/thing #1"), self.browser).run()
         self.assertEqual(self.browser.opened, [])
 
     def test_closing_the_list_opens_nothing(self):

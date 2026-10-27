@@ -6,7 +6,7 @@ from akari_kopa.entrypoints.tray.tray import Tray
 from akari_kopa.use_cases.listing.listing import Listing
 from tests.fakes import FORGE_PAGE, Clock, FakeAnswers, FakeService, a_merge_request, on_day
 
-KEY = "forge me/thing #1"
+KEY = "forge forge.example me/thing #1"
 
 
 class FakeIcon:

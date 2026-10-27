@@ -52,7 +52,7 @@ def _by_service(merge_requests: list[MergeRequest], board: Board, faded: bool) -
 def _view(merge_request: MergeRequest, board: Board, faded: bool) -> MergeRequestView:
     details = [merge_request.project, merge_request.role.word, word_of(merge_request), *merge_request.address.notes()]
     return MergeRequestView(
-        key=f"{merge_request.service} {merge_request.project} {merge_request.reference}",
+        key=f"{merge_request.service} {merge_request.address.forge_host} {merge_request.project} {merge_request.reference}",
         summary=f"{merge_request.reference} · {merge_request.author}",
         title=merge_request.title,
         details=" · ".join(details),

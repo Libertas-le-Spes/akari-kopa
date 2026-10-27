@@ -1,7 +1,7 @@
 import unittest
 
 from akari_kopa.attention.merge_request.role import REVIEWING
-from akari_kopa.attention.merge_request.web_address import RefusedAddress
+from akari_kopa.attention.merge_request.web_address import RefusedAddress, WebAddress
 from akari_kopa.presenters.board.board_view import board_view
 from akari_kopa.use_cases.listing.board import Board, NotUpdated
 from tests.fakes import a_merge_request
@@ -43,9 +43,17 @@ class BoardView(unittest.TestCase):
         raw = board_view(Board([a_merge_request()], [])).as_json()
         self.assertEqual(raw["groups"][0]["services"][0]["merge_requests"][0]["look"], {"colour": "#3fb950", "ring": False, "faded": False})
 
-    def test_each_merge_request_is_known_by_service_project_and_reference_not_by_its_address(self):
+    def test_each_merge_request_is_known_by_service_host_project_and_reference_not_by_its_address(self):
         view = board_view(Board([a_merge_request(service="gitlab", project="team/app", reference="!4")], []))
-        self.assertEqual(view.merge_requests()[0].key, "gitlab team/app !4")
+        self.assertEqual(view.merge_requests()[0].key, "gitlab forge.example team/app !4")
+
+    def test_the_same_project_and_reference_on_two_hosts_are_two_merge_requests(self):
+        elsewhere = WebAddress("https://mirror.example/me/thing/1", "mirror.example")
+        view = board_view(Board([a_merge_request(), a_merge_request(address=elsewhere)], []))
+        keys = []
+        for merge_request in view.merge_requests():
+            keys.append(merge_request.key)
+        self.assertEqual(keys, ["forge forge.example me/thing #1", "forge mirror.example me/thing #1"])
 
     def test_an_address_that_was_refused_says_why_in_the_details(self):
         refused = RefusedAddress("only https addresses are opened", "forge.example")

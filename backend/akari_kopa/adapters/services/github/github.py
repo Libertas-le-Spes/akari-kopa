@@ -26,7 +26,7 @@ class GitHub:
         return found
 
     def _on(self, host: str) -> list[MergeRequest]:
-        data = self.cli.ask(host, query.BOARD)["data"]
+        data = self.cli.ask(host, query.BOARD, {})["data"]
         reading = ConversationReading(data["viewer"]["login"])
         found = []
         for node in data["viewer"]["pullRequests"]["nodes"]:
@@ -38,7 +38,7 @@ class GitHub:
 
     def _mine(self, host: str, node: dict, reading: ConversationReading) -> MergeRequest:
         details = dict(node)
-        details.update(self.cli.ask(host, query.CONVERSATION, id=node["id"])["data"]["node"])
+        details.update(self.cli.ask(host, query.CONVERSATION, {"id": node["id"]})["data"]["node"])
         conversation = reading.conversation(details, self._all_threads(host, details))
         return replace(merge_request(node, host, MINE), conversation=conversation, repository=repository_of(details))
 
@@ -46,6 +46,6 @@ class GitHub:
         page = details["reviewThreads"]
         threads = list(page["nodes"])
         while page["pageInfo"]["hasNextPage"]:
-            page = self.cli.ask(host, query.MORE_THREADS, id=details["id"], after=page["pageInfo"]["endCursor"])["data"]["node"]["reviewThreads"]
+            page = self.cli.ask(host, query.MORE_THREADS, {"id": details["id"], "after": page["pageInfo"]["endCursor"]})["data"]["node"]["reviewThreads"]
             threads += page["nodes"]
         return threads

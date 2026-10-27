@@ -35,15 +35,13 @@ def merge_request(iid: str, status: str | None, can_push: bool) -> dict:
     }
 
 
-AUTHORED = {
-    **merge_request("4", "RUNNING", True),
-    "discussions": {"pageInfo": {"hasNextPage": True, "endCursor": "d1"}, "nodes": [
+AUTHORED = with_value(merge_request("4", "RUNNING", True), "discussions", {
+    "pageInfo": {"hasNextPage": True, "endCursor": "d1"}, "nodes": [
         discussion("me", 1, resolvable=False, system=True),
         discussion("ana", 2),
         discussion("ana", 2.5, resolved=True),
         discussion("renovate", 3, bot=True),
-    ]},
-}
+    ]})
 
 BOARD = {"data": {"currentUser": {
     "username": "me",

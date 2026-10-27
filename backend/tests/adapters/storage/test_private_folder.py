@@ -46,23 +46,32 @@ class PrivateFolderTest(unittest.TestCase):
     def test_existing_files_are_opened_without_following_a_link_or_waiting_on_a_pipe(self):
         self.assertEqual(EXISTING_FILE & (os.O_NOFOLLOW | os.O_NONBLOCK), os.O_NOFOLLOW | os.O_NONBLOCK)
 
-    def test_a_pipe_planted_in_the_folder_is_refused_before_anything_is_read(self):
+    def test_a_pipe_planted_in_the_folder_is_refused_and_closed_before_anything_is_read(self):
         self.os.fstat.return_value = mock.Mock(st_uid=1000, st_mode=0o010600)
         with self.assertRaises(FolderRefused):
             PrivateFolder("/cache/answers").read("forge.json")
-        self.os.fdopen.return_value.__enter__.return_value.read.assert_not_called()
-        self.os.close.assert_called_once_with(FOLDER)
+        self.os.fstat.assert_called_once_with(FILE)
+        self.os.fdopen.assert_not_called()
+        self.assertEqual(self.os.close.call_args_list, [mock.call(FILE), mock.call(FOLDER)])
 
-    def test_a_file_of_another_account_planted_in_the_folder_is_refused_before_anything_is_read(self):
+    def test_a_folder_planted_under_a_file_name_is_refused_and_closed_before_anything_is_read(self):
+        self.os.fstat.return_value = mock.Mock(st_uid=1000, st_mode=0o040700)
+        with self.assertRaises(FolderRefused):
+            PrivateFolder("/cache/answers").read("forge.json")
+        self.os.fdopen.assert_not_called()
+        self.assertEqual(self.os.close.call_args_list, [mock.call(FILE), mock.call(FOLDER)])
+
+    def test_a_file_of_another_account_planted_in_the_folder_is_refused_and_closed_before_anything_is_read(self):
         self.os.fstat.return_value = mock.Mock(st_uid=1001, st_mode=0o100600)
         with self.assertRaises(FolderRefused):
             PrivateFolder("/cache/answers").read("forge.json")
-        self.os.fdopen.return_value.__enter__.return_value.read.assert_not_called()
-        self.os.close.assert_called_once_with(FOLDER)
+        self.os.fdopen.assert_not_called()
+        self.assertEqual(self.os.close.call_args_list, [mock.call(FILE), mock.call(FOLDER)])
 
     def test_a_read_opens_inside_the_checked_folder_without_following_a_link(self):
         self.os.fstat.return_value = mock.Mock(st_uid=1000, st_mode=0o100600)
         self.os.fdopen.return_value.__enter__.return_value.read.return_value = "{}"
         self.assertEqual(PrivateFolder("/cache/answers").read("forge.json"), "{}")
         self.os.open.assert_called_once_with("forge.json", EXISTING_FILE, dir_fd=FOLDER)
+        self.os.fdopen.assert_called_once_with(FILE, encoding="utf-8")
         self.os.close.assert_called_once_with(FOLDER)

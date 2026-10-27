@@ -26,7 +26,7 @@ class GitLab:
         return found
 
     def _on(self, host: str) -> list[MergeRequest]:
-        me = self.cli.ask(host, query.BOARD)["data"]["currentUser"]
+        me = self.cli.ask(host, query.BOARD, {})["data"]["currentUser"]
         reading = ConversationReading(me["username"])
         found = []
         for node in me["authoredMergeRequests"]["nodes"]:
@@ -44,7 +44,7 @@ class GitLab:
         discussions = list(page["nodes"])
         while page["pageInfo"]["hasNextPage"]:
             after = page["pageInfo"]["endCursor"]
-            more = self.cli.ask(host, query.MORE_DISCUSSIONS, project=node["project"]["fullPath"], iid=node["iid"], after=after)
+            more = self.cli.ask(host, query.MORE_DISCUSSIONS, {"project": node["project"]["fullPath"], "iid": node["iid"], "after": after})
             page = more["data"]["project"]["mergeRequest"]["discussions"]
             discussions += page["nodes"]
         return discussions

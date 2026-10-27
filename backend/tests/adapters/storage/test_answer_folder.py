@@ -56,6 +56,12 @@ class AnswerFolderTest(unittest.TestCase):
         self.folder.read.return_value = json.dumps({"given": on_day(4).isoformat(), "mergeRequests": [raw]})
         self.assertIsNone(AnswerFolder(self.folder).last("forge"))
 
+    def test_an_answer_whose_forge_host_was_changed_into_a_number_is_not_used(self):
+        raw = encoded(a_merge_request())
+        raw["address"]["forgeHost"] = 5
+        self.folder.read.return_value = json.dumps({"given": on_day(4).isoformat(), "mergeRequests": [raw]})
+        self.assertIsNone(AnswerFolder(self.folder).last("forge"))
+
     def test_an_answer_kept_before_addresses_were_checked_is_not_used(self):
         raw = encoded(a_merge_request())
         raw["url"] = raw.pop("address")

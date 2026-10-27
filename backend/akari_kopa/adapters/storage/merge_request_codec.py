@@ -14,7 +14,7 @@ def encoded(merge_request: MergeRequest) -> dict:
         "service": merge_request.service,
         "reference": merge_request.reference,
         "title": merge_request.title,
-        "address": merge_request.address.stored(),
+        "address": _encoded_address(merge_request.address),
         "project": merge_request.project,
         "author": merge_request.author,
         "role": merge_request.role.name,
@@ -42,6 +42,14 @@ def decoded(raw: dict) -> MergeRequest:
     )
 
 
+def _stored_web_address(address: WebAddress) -> dict:
+    return {"kind": "web", "text": address.text, "forgeHost": address.forge_host}
+
+
+def _stored_refused_address(address: RefusedAddress) -> dict:
+    return {"kind": "refused", "reason": address.reason, "forgeHost": address.forge_host}
+
+
 def _web_address(raw: dict) -> WebAddress | RefusedAddress:
     return address_of(raw["text"], raw["forgeHost"])
 
@@ -50,7 +58,12 @@ def _refused_address(raw: dict) -> RefusedAddress:
     return RefusedAddress(raw["reason"], raw["forgeHost"])
 
 
+ADDRESSES_STORED = {WebAddress: _stored_web_address, RefusedAddress: _stored_refused_address}
 STORED_ADDRESSES = {"web": _web_address, "refused": _refused_address}
+
+
+def _encoded_address(address: WebAddress | RefusedAddress) -> dict:
+    return ADDRESSES_STORED[type(address)](address)
 
 
 def _decoded_address(raw: dict) -> WebAddress | RefusedAddress:

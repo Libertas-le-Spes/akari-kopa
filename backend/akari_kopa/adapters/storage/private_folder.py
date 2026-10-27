@@ -30,11 +30,19 @@ class PrivateFolder:
 
 def _read_own_file(folder: int, name: str) -> str:
     file = os.open(name, EXISTING_FILE, dir_fd=folder)
+    try:
+        _refuse_unless_own_file(file, name)
+    except FolderRefused:
+        os.close(file)
+        raise
     with os.fdopen(file, encoding="utf-8") as opened:
-        found = os.fstat(opened.fileno())
-        if not stat.S_ISREG(found.st_mode) or found.st_uid != os.getuid():
-            raise FolderRefused(f"{name} is not a file of this account's own")
         return opened.read()
+
+
+def _refuse_unless_own_file(file: int, name: str) -> None:
+    found = os.fstat(file)
+    if not stat.S_ISREG(found.st_mode) or found.st_uid != os.getuid():
+        raise FolderRefused(f"{name} is not a file of this account's own")
 
 
 def _write_whole(folder: int, name: str, text: str) -> None:
