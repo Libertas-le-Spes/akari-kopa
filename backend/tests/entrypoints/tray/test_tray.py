@@ -1,5 +1,6 @@
 import unittest
 
+from akari_kopa.attention.merge_request.web_address import RefusedAddress
 from akari_kopa.attention.pipeline.pipeline import FAILED
 from akari_kopa.entrypoints.tray.tray import Tray
 from akari_kopa.use_cases.listing.listing import Listing
@@ -44,7 +45,18 @@ class FakeDesktop:
         then(work())
 
     def live(self):
-        return {key: icon for key, icon in self.icons.items() if not icon.closed}
+        live = {}
+        for key, icon in self.icons.items():
+            if not icon.closed:
+                live[key] = icon
+        return live
+
+
+def entry_named(label, menu):
+    for entry in menu:
+        if entry.label == label:
+            return entry
+    raise AssertionError(f"no {label} in the menu")
 
 
 class TrayTest(unittest.TestCase):
@@ -78,6 +90,11 @@ class TrayTest(unittest.TestCase):
 
     def test_clicking_open_in_browser_opens_that_merge_request(self):
         self.tray.check()
-        menu = self.desktop.live()[KEY].content.menu
-        next(entry for entry in menu if entry.label == "Open in browser").action()
+        entry_named("Open in browser", self.desktop.live()[KEY].content.menu).action()
         self.assertEqual(self.desktop.opened, [FORGE_PAGE])
+
+    def test_clicking_open_in_browser_on_a_refused_address_opens_nothing(self):
+        self.forge.answer = [a_merge_request(address=RefusedAddress("only https addresses are opened", "forge.example"))]
+        self.tray.check()
+        entry_named("Open in browser", self.desktop.live()[KEY].content.menu).action()
+        self.assertEqual(self.desktop.opened, [])

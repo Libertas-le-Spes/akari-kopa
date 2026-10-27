@@ -31,20 +31,20 @@ Everything below was checked against that commit. Where a claim is about what co
 
 | ID | Severity | Status on `security-review-akari` |
 |---|---|---|
-| F1 | Medium | **Fixed.** Every address goes through one check (`https`, the host that was asked, no login, no space, backslash or hidden character) and becomes a `WebAddress`; anything else becomes a `RefusedAddress` that opens nothing and says why in the list. The cache stores the host with each address and checks it again on reading. The bar's QML has its own `https://` guard. |
+| F1 | Medium | **Fixed.** Every address goes through one check (`https`, the host that was asked, no login, no space, backslash or hidden character) and becomes a `WebAddress`; anything else becomes a `RefusedAddress` that opens nothing and says why in the list. The cache stores each address with its kind. A web address is checked again on reading, which turns away caches kept before the check and addresses edited into another scheme; it does not stop someone who can rewrite both an address and its host in the file, which the private folder (F8) is there to keep out. A refused address comes back refused, with its reason. The bar's QML has its own `https://` guard. |
 | F2 | Medium | **Open: needs repository and organisation settings**, which this branch does not change. Option D is ruled out: `omarchy plugin` cannot install a tag (see F2). The README no longer tells users to skip the update's diff (F11). |
 | F3 | Medium | **Fixed.** The launcher runs `python3 -I` on a start file that adds only its own folder. `install.sh` checks Python the same way and stops the tray by the new command line. |
 | F4 | Medium | **Fixed.** Redirects are refused, the token is sent only over `https` to `dev.azure.com` and `app.vssps.visualstudio.com`, and it is an unredirected header. Every part the server gave is escaped in API paths. |
 | F5 | Low | **Fixed except `tea`.** List rows go to `zenity` on standard input; `kdialog` is no longer used. GraphQL queries and variables go to `gh` and `glab` as a JSON body on standard input. `tea` still takes repository names as arguments; the README advises `hidepid` for shared machines. |
-| F6 | Low | **Partly done: the README says which read-only logins to use (option A).** Akari Kopa's own read-only tokens in the Secret Service (option B) are not built. |
+| F6 | Low | **Partly done (option A).** The README names a read-only token for GitLab. Azure DevOps still uses your full `az` login: Akari Kopa has no way to take any other token until option B, its own read-only tokens in the Secret Service, is built. |
 | F7 | Low | **Fixed.** Notification bodies and tray tooltips are escaped. |
-| F8 | Low | **Fixed.** The cache folder is opened without following a link, refused if another account owns it, tightened to `0700` if it is yours; files are created exclusively, private from the start, under a random name, then swapped in. |
-| F9 | Info | **Fixed.** A shortcut is refused when the install path has anything outside letters, digits, `/`, `.`, `_` and `-`; `install.sh` refuses the same. Configuration is written to a new copy and swapped in whole, keeping its permissions; a linked dotfile stays a link; an edit made meanwhile is never overwritten. |
+| F8 | Low | **Fixed.** The cache folder is opened without following a link, refused if another account owns it, tightened to `0700` if it is yours; a file in it is opened without following a link or waiting on a planted pipe, and read only if it is a regular file of yours; files are created exclusively, private from the start, under a random name, then swapped in. |
+| F9 | Info | **Fixed.** A shortcut is refused when the install path has anything outside letters, digits, `/`, `.`, `_` and `-`; `install.sh` refuses the same. Configuration is written to a new copy and swapped in whole, keeping its permissions; a linked dotfile stays a link; an edit seen before writing is not overwritten, though one landing in the instant between that check and the swap can still be lost. |
 | F10 | Info | **Fixed in code, open in settings.** `.github/workflows/tests.yml` runs the tests on every pull request with read-only permissions and a pinned action. It becomes a guard only once F2's ruleset requires it. |
 | F11 | Low | **Fixed.** The README no longer passes `--yes` to `omarchy plugin add` or `update`. |
 | F12 | Low | **Fixed.** Every forge tool gets 60 seconds, then the service shows "not updated" with the reason. |
-| F13 | Info | **Fixed.** Relative `XDG_CACHE_HOME`, `XDG_CONFIG_HOME` and `XDG_DATA_HOME` are ignored, as the specification says. |
-| F14 | Info | **Fixed.** `install.sh` refuses to replace another program called `akari` or `akari-kopa`, and `--remove` only removes its own links. The README uses `ln -s`, which refuses as well. |
+| F13 | Info | **Fixed.** Relative `XDG_CACHE_HOME`, `XDG_CONFIG_HOME` and `XDG_DATA_HOME` are ignored, as the specification says, by Akari Kopa and by `install.sh`. |
+| F14 | Info | **Fixed.** `install.sh` checks both names before linking either, refuses to replace another program called `akari` or `akari-kopa`, and `--remove` only removes its own links; the README's removal line deletes only links into the plugin. The README uses `ln -s`, which refuses as well. |
 | F15 | Info | **Open: organisation settings**, tracked in the organisation's own review (Libertas-le-Spes/Libertas-le-Spes#1). |
 
 ## Findings
@@ -387,7 +387,7 @@ Sources: [GitHub: security hardening for GitHub Actions](https://docs.github.com
 | Tokens in logs, errors, cache, QML | No token reaches any of them. Error reasons are the last line of a tool's error output, cut to 160 characters, and they never contain the token Akari Kopa holds. |
 | TLS | `urllib` uses Python's default context, which checks certificates and host names (`verify_mode: 2 check_hostname: True`). `gh`, `glab`, `tea` and `az` do their own checking. |
 | Shell injection in subprocesses | Every program is started with a list of arguments, never through a shell (`adapters/transport/command_line.py`). |
-| GraphQL variables | Passed with `-f`, which `gh` and `glab` take as plain text, so a value starting with `@` cannot make them read a file. Each value is preceded by its name, so none can start with `-`. |
+| GraphQL variables | Sent with the query as one JSON body on standard input, never as arguments, so no value can be taken as an option or make `gh` or `glab` read a file. |
 | Azure DevOps addresses | Built from fixed hosts, with organisation, project and repository names escaped. |
 | QML drawing | Every `Text` uses `Text.PlainText`, and so does the Omarchy bar's tooltip, so titles cannot inject rich text there. The bar's process has a fixed command with no arguments. |
 | Local ports and IPC | Nothing listens on a network port, unlike the localhost page that was fixed in Chronata. The Quickshell IPC target offers only `refresh` and `toggle` and gives nothing back. The tray's D-Bus objects are on your own session bus, and menu numbers are checked against the menu's length. |
@@ -451,7 +451,7 @@ Sources: [GitHub: security hardening for GitHub Actions](https://docs.github.com
 | Server values in Gitea API paths | `tea api` paths include the repository name and commit the server gave. They can only point at another path on the same server, which already chose the answers; left as they are. |
 | GraphQL errors | Calling `glab` by path no longer turns a GraphQL error into a failure, so the transport now reports any `errors` in an answer itself. |
 | Old caches | A cache written before this branch has no host stored with each address. It is not used; the next reading replaces it. |
-| Tests | No test writes a file, runs a shell or opens a browser. Each fix was taken out in turn and a test then failed: the host and scheme checks, the bar's guard, the unredirected header, the host list, the redirect refusal, the time limit, the markup escape, the folder owner check, exclusive file creation, the cache re-check, the changed-meanwhile check, the install path check, `-I`, GraphQL on standard input and relative XDG paths. |
+| Tests | No test writes a file, runs a shell or opens a browser. Each fix was taken out in turn and a test then failed: the host and scheme checks, the bar's guard, the unredirected header, the host list, the redirect refusal, the time limit, the markup escape, the folder owner check, the cache file's type and owner check, opening it without waiting on a pipe, exclusive file creation, the cache re-check, the changed-meanwhile check, the install path check, `-I`, GraphQL on standard input and relative XDG paths. |
 
 ## Plan: what is left
 

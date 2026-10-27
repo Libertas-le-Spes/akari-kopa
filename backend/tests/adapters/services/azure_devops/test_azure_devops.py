@@ -52,14 +52,14 @@ class FakeHttps:
         self.token = token
         self.posted = []
 
-    def get(self, path: str, **parameters: str):
+    def get(self, path: str, parameters: dict[str, str]):
         if "searchCriteria.creatorId" in parameters:
             return {"value": [pull_request(7, "Me Myself")]}
         if "searchCriteria.reviewerId" in parameters:
             return {"value": [pull_request(8, "Ana")]}
         return GETS[f"{path} {_pull_request_number(parameters)}".strip()]
 
-    def post(self, path: str, body: dict, **parameters: str):
+    def post(self, path: str, body: dict, parameters: dict[str, str]):
         self.posted.append(body["evaluations"][0]["token"])
         return {"evaluations": [{"value": False}]}
 

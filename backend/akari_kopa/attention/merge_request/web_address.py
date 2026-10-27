@@ -13,6 +13,9 @@ class WebAddress:
     def notes(self) -> list[str]:
         return []
 
+    def stored(self) -> dict:
+        return {"kind": "web", "text": self.text, "forgeHost": self.forge_host}
+
 
 @dataclass(frozen=True)
 class RefusedAddress:
@@ -25,3 +28,6 @@ class RefusedAddress:
 
     def notes(self) -> list[str]:
         return [f"not opened: {self.reason}"]
+
+    def stored(self) -> dict:
+        return {"kind": "refused", "reason": self.reason, "forgeHost": self.forge_host}

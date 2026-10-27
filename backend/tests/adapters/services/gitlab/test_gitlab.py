@@ -7,7 +7,7 @@ from akari_kopa.attention.merge_request.web_address import RefusedAddress, WebAd
 from akari_kopa.attention.pipeline.pipeline import FAILED, NO_PIPELINE, PASSED, RUNNING
 from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fake_command_line import FakeCommandLine
-from tests.fakes import on_day
+from tests.fakes import on_day, with_value
 
 SIGNED_IN = {("glab", "auth", "status"): "gitlab.com\n  ✓ Logged in\n", ("glab", "auth", "status", "--hostname", "gitlab.com"): ""}
 
@@ -47,8 +47,8 @@ AUTHORED = {
 
 BOARD = {"data": {"currentUser": {
     "username": "me",
-    "authoredMergeRequests": {"nodes": [AUTHORED, {**merge_request("5", "FAILED", False), "discussions": {"pageInfo": {"hasNextPage": False}, "nodes": []}}]},
-    "reviewRequestedMergeRequests": {"nodes": [merge_request("6", "MANUAL", True), {**merge_request("7", None, True), "webUrl": "file:///home/someone/.ssh/id_ed25519"}]},
+    "authoredMergeRequests": {"nodes": [AUTHORED, with_value(merge_request("5", "FAILED", False), "discussions", {"pageInfo": {"hasNextPage": False}, "nodes": []})]},
+    "reviewRequestedMergeRequests": {"nodes": [merge_request("6", "MANUAL", True), with_value(merge_request("7", None, True), "webUrl", "file:///home/someone/.ssh/id_ed25519")]},
 }}}
 
 MORE = {"data": {"project": {"mergeRequest": {"discussions": {"pageInfo": {"hasNextPage": False}, "nodes": [discussion("bo", 4)]}}}}}
@@ -56,7 +56,7 @@ MORE = {"data": {"project": {"mergeRequest": {"discussions": {"pageInfo": {"hasN
 
 class GitLabTest(unittest.TestCase):
     def setUp(self):
-        self.command_line = FakeCommandLine({"glab"}, {("glab", '"after": "d1"'): MORE, ("glab",): BOARD}, SIGNED_IN)
+        self.command_line = FakeCommandLine({"glab"}, {("glab", "after=d1"): MORE, ("glab",): BOARD}, SIGNED_IN)
         self.found = GitLab(GraphQlCli(self.command_line, "glab", "../graphql")).merge_requests()
 
     def test_mine_and_the_ones_i_review(self):

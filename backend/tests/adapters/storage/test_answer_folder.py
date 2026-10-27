@@ -5,6 +5,7 @@ from unittest import mock
 from akari_kopa.adapters.storage.answer_folder import AnswerFolder
 from akari_kopa.adapters.storage.folder_check import FolderRefused
 from akari_kopa.adapters.storage.merge_request_codec import encoded
+from akari_kopa.adapters.storage.private_folder import PrivateFolder
 from akari_kopa.attention.conversation.conversation import Conversation
 from akari_kopa.attention.merge_request.role import REVIEWING
 from akari_kopa.attention.merge_request.web_address import RefusedAddress
@@ -22,7 +23,7 @@ def kept_text(*merge_requests) -> str:
 
 class AnswerFolderTest(unittest.TestCase):
     def setUp(self):
-        self.folder = mock.Mock()
+        self.folder = mock.create_autospec(PrivateFolder, instance=True)
 
     def test_an_answer_is_written_whole_under_its_service_name(self):
         kept = a_merge_request(role=REVIEWING, pipeline=RUNNING, repository=SOMEONE_ELSES,
@@ -39,10 +40,21 @@ class AnswerFolderTest(unittest.TestCase):
 
     def test_a_hostile_address_planted_in_the_cache_is_checked_again_and_refused(self):
         raw = encoded(a_merge_request())
-        raw["address"] = "file:///home/someone/.ssh/id_ed25519"
+        raw["address"]["text"] = "file:///home/someone/.ssh/id_ed25519"
         self.folder.read.return_value = json.dumps({"given": on_day(4).isoformat(), "mergeRequests": [raw]})
         address = AnswerFolder(self.folder).last("forge").merge_requests[0].address
         self.assertEqual(address, RefusedAddress("only https addresses are opened", "forge.example"))
+
+    def test_a_refused_address_comes_back_refused_for_the_same_reason(self):
+        kept = a_merge_request(address=RefusedAddress("only https addresses are opened", "forge.example"))
+        self.folder.read.return_value = kept_text(kept)
+        self.assertEqual(AnswerFolder(self.folder).last("forge").merge_requests, [kept])
+
+    def test_an_address_of_a_kind_never_kept_is_not_used(self):
+        raw = encoded(a_merge_request())
+        raw["address"]["kind"] = "trusted"
+        self.folder.read.return_value = json.dumps({"given": on_day(4).isoformat(), "mergeRequests": [raw]})
+        self.assertIsNone(AnswerFolder(self.folder).last("forge"))
 
     def test_an_answer_kept_before_addresses_were_checked_is_not_used(self):
         raw = encoded(a_merge_request())
@@ -59,8 +71,11 @@ class AnswerFolderTest(unittest.TestCase):
         self.folder.read.return_value = "{half"
         self.assertIsNone(AnswerFolder(self.folder).last("forge"))
 
-    def test_a_refused_folder_keeps_nothing_and_the_board_goes_on(self):
-        self.folder.write.side_effect = FolderRefused("belongs to another account")
-        with mock.patch("sys.stderr"):
-            AnswerFolder(self.folder).keep("forge", [], on_day(4))
-        self.assertEqual(self.folder.write.call_count, 1)
+    def test_a_folder_that_cannot_be_written_keeps_nothing_and_the_board_goes_on(self):
+        for problem in (FolderRefused("belongs to another account"), FileExistsError(), PermissionError()):
+            with self.subTest(type(problem).__name__):
+                self.folder.write.reset_mock()
+                self.folder.write.side_effect = problem
+                with mock.patch("sys.stderr"):
+                    AnswerFolder(self.folder).keep("forge", [], on_day(4))
+                self.assertEqual(self.folder.write.call_count, 1)

@@ -48,7 +48,7 @@ To remove it, take the shortcut and the commands out, then the plugin:
 
 ```sh
 akari remove-shortcut
-rm -f ~/.local/bin/akari ~/.local/bin/akari-kopa
+find ~/.local/bin -maxdepth 1 -lname '*/kayu.akari-kopa/backend/bin/akari-kopa' -delete
 omarchy plugin remove kayu.akari-kopa --yes
 ```
 
@@ -87,7 +87,7 @@ az login --allow-no-subscriptions
 
 When a service cannot be reached, its last answer stays on show, faded, with the reason in the list.
 
-Akari Kopa only reads, so it needs no more than a read-only login: for GitLab, a token with only `read_api` (`glab auth login` lets you paste one); for Azure DevOps, a token with only Code (Read) and Build (Read). GitHub has no read-only login that covers private repositories across several owners, so `gh` keeps its usual login.
+Akari Kopa only reads, so for GitLab a token with only `read_api` is enough (`glab auth login` lets you paste one). GitHub has no read-only login that covers private repositories across several owners, so `gh` keeps its usual login. Azure DevOps uses your full `az` login, which can do anything you can do there: Akari Kopa has no way yet to take a read-only token instead.
 
 A merge request opens only when its address is an `https` page on the forge it came from; any other address is shown with the reason and opens nothing.
 

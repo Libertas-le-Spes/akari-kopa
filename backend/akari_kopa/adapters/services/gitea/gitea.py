@@ -44,5 +44,6 @@ class Gitea:
 
     def _mine(self, login: TeaLogin, issue: dict, reading: ConversationReading) -> MergeRequest:
         pull, status = self.parts.pull_and_status(login, issue)
-        conversation = reading.conversation(*self.parts.of(login, issue, pull))
+        comments, reviews, review_comments, head_commit = self.parts.of(login, issue, pull)
+        conversation = reading.conversation(comments, reviews, review_comments, head_commit)
         return replace(merge_request(issue, pull, status, login.host, MINE), conversation=conversation, repository=repository_of(pull))

@@ -7,7 +7,7 @@ from akari_kopa.attention.merge_request.web_address import RefusedAddress, WebAd
 from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE, PASSED
 from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fake_command_line import FakeCommandLine
-from tests.fakes import on_day
+from tests.fakes import on_day, with_value
 
 REPO = "/repos/them/thing"
 
@@ -29,7 +29,7 @@ ANSWERS = {
     ("tea", "logins", "list", "--output", "json"): [{"name": "codeberg", "url": "https://codeberg.org"}],
     ("/user",): {"login": "me"},
     ("/repos/issues/search?type=pulls&state=open&created=true&limit=50",): [issue(1)],
-    ("/repos/issues/search?type=pulls&state=open&review_requested=true&limit=50",): [issue(2), {**issue(3), "html_url": "smb://203.0.113.9/share"}],
+    ("/repos/issues/search?type=pulls&state=open&review_requested=true&limit=50",): [issue(2), with_value(issue(3), "html_url", "smb://203.0.113.9/share")],
     (f"{REPO}/pulls/1",): pull(1, False),
     (f"{REPO}/pulls/2",): pull(2, True),
     (f"{REPO}/pulls/3",): pull(3, True),

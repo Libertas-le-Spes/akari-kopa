@@ -22,6 +22,12 @@ def a_merge_request(**changes) -> MergeRequest:
     return replace(plain, **changes)
 
 
+def with_value(raw: dict, key: str, value: object) -> dict:
+    changed = dict(raw)
+    changed[key] = value
+    return changed
+
+
 def commented_on(day: float) -> Conversation:
     return Conversation(comments=(on_day(day),))
 

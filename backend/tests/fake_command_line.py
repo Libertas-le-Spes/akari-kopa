@@ -1,3 +1,5 @@
+import json
+
 from akari_kopa.use_cases.listing.ports import ServiceError
 
 
@@ -22,8 +24,9 @@ class FakeCommandLine:
         self.asked.append(arguments)
         return self.said.get(arguments)
 
-    def text(self, *arguments: str) -> str:
+    def text(self, *arguments: str, given: str = "") -> str:
         self.asked.append(arguments)
+        self.given.append(given)
         self._settle(arguments)
         return ""
 
@@ -51,10 +54,20 @@ class FakeCommandLine:
 
 
 def _all_present(key: tuple, arguments: tuple, given: str) -> bool:
+    variables = _variables_in(given)
     for part in key:
-        if part not in arguments and part not in given:
+        if part not in arguments and part not in variables:
             return False
     return True
+
+
+def _variables_in(given: str) -> list[str]:
+    if not given:
+        return []
+    found = []
+    for name, value in json.loads(given)["variables"].items():
+        found.append(f"{name}={value}")
+    return found
 
 
 def _given_or_none(prepared: dict | None) -> dict:

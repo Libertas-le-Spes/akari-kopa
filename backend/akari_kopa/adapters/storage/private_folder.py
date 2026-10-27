@@ -6,7 +6,7 @@ from akari_kopa.adapters.storage.folder_check import FolderRefused, opened_priva
 
 PRIVATE_FILE = 0o600
 NEW_FILE = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
-EXISTING_FILE = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
+EXISTING_FILE = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
 
 
 class PrivateFolder:

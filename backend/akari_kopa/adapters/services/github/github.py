@@ -37,7 +37,8 @@ class GitHub:
         return found
 
     def _mine(self, host: str, node: dict, reading: ConversationReading) -> MergeRequest:
-        details = {**node, **self.cli.ask(host, query.CONVERSATION, id=node["id"])["data"]["node"]}
+        details = dict(node)
+        details.update(self.cli.ask(host, query.CONVERSATION, id=node["id"])["data"]["node"])
         conversation = reading.conversation(details, self._all_threads(host, details))
         return replace(merge_request(node, host, MINE), conversation=conversation, repository=repository_of(details))
 

@@ -16,10 +16,10 @@ class Https:
         self.destinations = destinations
         self.opener = opener
 
-    def get(self, address: str, **parameters: str):
+    def get(self, address: str, parameters: dict[str, str]):
         return self._fetch(address + _query(parameters), None)
 
-    def post(self, address: str, body: dict, **parameters: str):
+    def post(self, address: str, body: dict, parameters: dict[str, str]):
         return self._fetch(address + _query(parameters), json.dumps(body).encode())
 
     def _fetch(self, address: str, body: bytes | None):

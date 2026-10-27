@@ -32,10 +32,10 @@ class AzureDevOps:
         if not token:
             return []
         api = self.connect(token)
-        me = api.get(f"{PROFILES}/profile/profiles/me", **{"api-version": VERSION})["id"]
+        me = api.get(f"{PROFILES}/profile/profiles/me", _asking({}))["id"]
         reading = ConversationReading(me)
         found = []
-        for organisation in api.get(f"{PROFILES}/accounts", memberId=me, **{"api-version": VERSION})["value"]:
+        for organisation in api.get(f"{PROFILES}/accounts", _asking({"memberId": me}))["value"]:
             found += self._in(api, organisation["accountName"], reading)
         return found
 
@@ -48,23 +48,29 @@ class AzureDevOps:
         return found
 
     def _pull_requests(self, api: Https, organisation: str, criterion: str, me: str) -> list[dict]:
-        criteria = {f"searchCriteria.{criterion}": me, "searchCriteria.status": "active", "$top": "100", "api-version": VERSION}
-        return api.get(f"{organisation_api(organisation)}/git/pullrequests", **criteria)["value"]
+        criteria = {f"searchCriteria.{criterion}": me, "searchCriteria.status": "active", "$top": "100"}
+        return api.get(f"{organisation_api(organisation)}/git/pullrequests", _asking(criteria))["value"]
 
     def _mine(self, api: Https, organisation: str, pull_request: dict, reading: ConversationReading) -> MergeRequest:
         found = merge_request(organisation, pull_request, self._builds(api, organisation, pull_request), MINE)
-        threads = api.get(f"{pull_request_api(organisation, pull_request)}/threads", **{"api-version": VERSION})["value"]
-        commits = api.get(f"{pull_request_api(organisation, pull_request)}/commits", **{"$top": "1", "api-version": VERSION})["value"]
+        threads = api.get(f"{pull_request_api(organisation, pull_request)}/threads", _asking({}))["value"]
+        commits = api.get(f"{pull_request_api(organisation, pull_request)}/commits", _asking({"$top": "1"}))["value"]
         evaluation = api.post(f"{organisation_api(organisation)}/security/permissionevaluationbatch",
-                              _may_contribute(pull_request), **{"api-version": VERSION})
+                              _may_contribute(pull_request), _asking({}))
         return replace(found, conversation=reading.conversation(threads, commits), repository=repository_of(evaluation))
 
     def _builds(self, api: Https, organisation: str, pull_request: dict) -> list[dict]:
         project = pull_request["repository"]["project"]["id"]
         branch = f"refs/pull/{pull_request['pullRequestId']}/merge"
-        found = api.get(f"{project_api(organisation, project)}/build/builds", branchName=branch,
-                        maxBuildsPerDefinition="1", queryOrder="queueTimeDescending", **{"api-version": VERSION})
+        newest = {"branchName": branch, "maxBuildsPerDefinition": "1", "queryOrder": "queueTimeDescending"}
+        found = api.get(f"{project_api(organisation, project)}/build/builds", _asking(newest))
         return found["value"]
+
+
+def _asking(parameters: dict[str, str]) -> dict[str, str]:
+    asked = dict(parameters)
+    asked["api-version"] = VERSION
+    return asked
 
 
 def _may_contribute(pull_request: dict) -> dict:

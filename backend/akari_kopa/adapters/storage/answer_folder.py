@@ -3,7 +3,6 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 
-from akari_kopa.adapters.storage.folder_check import FolderRefused
 from akari_kopa.adapters.storage.merge_request_codec import decoded, encoded
 from akari_kopa.adapters.storage.private_folder import PrivateFolder
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
@@ -30,8 +29,8 @@ class AnswerFolder:
         text = json.dumps({"given": given.isoformat(), "mergeRequests": _encoded_all(merge_requests)})
         try:
             self.folder.write(f"{service}.json", text)
-        except FolderRefused as refusal:
-            print(f"akari-kopa: kept nothing for {service}: {refusal}", file=sys.stderr)
+        except OSError as problem:
+            print(f"akari-kopa: kept nothing for {service}: {problem}", file=sys.stderr)
 
 
 def _decoded_all(raw: list[dict]) -> list[MergeRequest]:

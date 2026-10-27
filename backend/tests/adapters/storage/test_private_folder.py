@@ -2,6 +2,7 @@ import os
 import unittest
 from unittest import mock
 
+from akari_kopa.adapters.storage.folder_check import FolderRefused
 from akari_kopa.adapters.storage.private_folder import EXISTING_FILE, NEW_FILE, PRIVATE_FILE, PrivateFolder
 
 PLACE = "akari_kopa.adapters.storage.private_folder"
@@ -41,7 +42,23 @@ class PrivateFolderTest(unittest.TestCase):
     def test_new_files_are_made_exclusively_without_following_a_link_and_private_from_the_start(self):
         self.assertEqual(NEW_FILE & (os.O_EXCL | os.O_NOFOLLOW | os.O_CREAT), os.O_EXCL | os.O_NOFOLLOW | os.O_CREAT)
         self.assertEqual(PRIVATE_FILE, 0o600)
-        self.assertTrue(EXISTING_FILE & os.O_NOFOLLOW)
+
+    def test_existing_files_are_opened_without_following_a_link_or_waiting_on_a_pipe(self):
+        self.assertEqual(EXISTING_FILE & (os.O_NOFOLLOW | os.O_NONBLOCK), os.O_NOFOLLOW | os.O_NONBLOCK)
+
+    def test_a_pipe_planted_in_the_folder_is_refused_before_anything_is_read(self):
+        self.os.fstat.return_value = mock.Mock(st_uid=1000, st_mode=0o010600)
+        with self.assertRaises(FolderRefused):
+            PrivateFolder("/cache/answers").read("forge.json")
+        self.os.fdopen.return_value.__enter__.return_value.read.assert_not_called()
+        self.os.close.assert_called_once_with(FOLDER)
+
+    def test_a_file_of_another_account_planted_in_the_folder_is_refused_before_anything_is_read(self):
+        self.os.fstat.return_value = mock.Mock(st_uid=1001, st_mode=0o100600)
+        with self.assertRaises(FolderRefused):
+            PrivateFolder("/cache/answers").read("forge.json")
+        self.os.fdopen.return_value.__enter__.return_value.read.assert_not_called()
+        self.os.close.assert_called_once_with(FOLDER)
 
     def test_a_read_opens_inside_the_checked_folder_without_following_a_link(self):
         self.os.fstat.return_value = mock.Mock(st_uid=1000, st_mode=0o100600)

@@ -5,7 +5,15 @@ here="$(cd "$(dirname "$0")" && pwd)"
 launcher="$here/backend/bin/akari-kopa"
 command_path="$HOME/.local/bin/akari-kopa"
 short_path="$HOME/.local/bin/akari"
-autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/akari-kopa-tray.desktop"
+config_home() {
+  if [[ ${XDG_CONFIG_HOME:-} == /* ]]; then
+    echo "$XDG_CONFIG_HOME"
+    return
+  fi
+  echo "$HOME/.config"
+}
+
+autostart="$(config_home)/autostart/akari-kopa-tray.desktop"
 
 declare -A packages=(
   [apt-get:python3]=python3 [apt-get:gi]=python3-gi
@@ -39,15 +47,17 @@ refuse_unsafe_path() {
   fi
 }
 
-link_command() {
-  if [ -e "$1" ] || [ -L "$1" ]; then
-    if ! is_ours "$1"; then
-      echo "$1 is another program; Akari Kopa leaves it alone. Remove it first to install Akari Kopa there." >&2
-      exit 1
-    fi
-    return
+refuse_another_program() {
+  if { [ -e "$1" ] || [ -L "$1" ]; } && ! is_ours "$1"; then
+    echo "$1 is another program; Akari Kopa leaves it alone. Remove it first to install Akari Kopa there." >&2
+    exit 1
   fi
-  ln -s "$launcher" "$1"
+}
+
+link_command() {
+  if ! is_ours "$1"; then
+    ln -s "$launcher" "$1"
+  fi
 }
 
 unlink_command() {
@@ -72,6 +82,8 @@ missing_packages() {
 }
 
 install_tray() {
+  refuse_another_program "$command_path"
+  refuse_another_program "$short_path"
   mkdir -p "$(dirname "$command_path")" "$(dirname "$autostart")"
   link_command "$command_path"
   link_command "$short_path"

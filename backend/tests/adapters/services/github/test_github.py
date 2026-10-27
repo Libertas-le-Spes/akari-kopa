@@ -7,7 +7,7 @@ from akari_kopa.attention.merge_request.web_address import RefusedAddress, WebAd
 from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE, PASSED
 from akari_kopa.attention.repository.follow_up import OWN, SOMEONE_ELSES
 from tests.fake_command_line import FakeCommandLine
-from tests.fakes import on_day
+from tests.fakes import on_day, with_value
 
 SIGNED_IN = {("gh", "auth", "status"): "github.com\n  ✓ Logged in to github.com\n", ("gh", "auth", "status", "--hostname", "github.com"): ""}
 
@@ -55,8 +55,8 @@ CONVERSATION = {
 
 BOARD = {"data": {
     "viewer": {"login": "me", "pullRequests": {"nodes": [pull_request(1, "READ", None)]}},
-    "search": {"nodes": [{**pull_request(9, "WRITE", "SUCCESS"), "author": {"login": "ana", "name": ""}},
-                         {**pull_request(10, "WRITE", None), "url": "https://github.com.example.net/them/thing/pull/10"}, {}]},
+    "search": {"nodes": [with_value(pull_request(9, "WRITE", "SUCCESS"), "author", {"login": "ana", "name": ""}),
+                         with_value(pull_request(10, "WRITE", None), "url", "https://github.com.example.net/them/thing/pull/10"), {}]},
 }}
 
 MORE_THREADS = {"data": {"node": {"reviewThreads": {"pageInfo": {"hasNextPage": False, "endCursor": None}, "nodes": [thread("ana", 1)]}}}}
@@ -64,7 +64,7 @@ MORE_THREADS = {"data": {"node": {"reviewThreads": {"pageInfo": {"hasNextPage": 
 
 class GitHubTest(unittest.TestCase):
     def setUp(self):
-        answers = {("gh", '"after": "c1"'): MORE_THREADS, ("gh", '"id": "PR_1"'): {"data": {"node": CONVERSATION}}, ("gh",): BOARD}
+        answers = {("gh", "after=c1"): MORE_THREADS, ("gh", "id=PR_1"): {"data": {"node": CONVERSATION}}, ("gh",): BOARD}
         self.command_line = FakeCommandLine({"gh"}, answers, SIGNED_IN)
         self.found = GitHub(GraphQlCli(self.command_line, "gh", "graphql")).merge_requests()
 
