@@ -1,5 +1,6 @@
 from akari_kopa.entrypoints.tray.icon_contents import IconContents
-from akari_kopa.presenters.board.board_view import BoardView, board_view
+from akari_kopa.presenters.board.board_view import board_view
+from akari_kopa.presenters.board.views import BoardView
 from akari_kopa.use_cases.desktop.ports import Desktop, Icon, IconContent
 from akari_kopa.use_cases.listing.listing import Listing
 
@@ -24,12 +25,15 @@ class Tray:
         if self.checking:
             return
         self.checking = True
-        self.desktop.in_background(lambda: board_view(self.listing.board()), self._show)
+        self.desktop.in_background(self._fresh_view, self._show)
+
+    def _fresh_view(self) -> BoardView:
+        return board_view(self.listing.board())
 
     def _show(self, view: BoardView) -> None:
         self.checking = False
         wanted = self.contents.wanted(view)
-        for key in [key for key in self.icons if key not in wanted]:
+        for key in _gone(self.icons, wanted):
             self.icons.pop(key).close()
         for key, content in wanted.items():
             self._show_one(key, content)
@@ -43,3 +47,11 @@ class Tray:
     def _register_again(self) -> None:
         for icon in self.icons.values():
             icon.register()
+
+
+def _gone(icons: dict[str, Icon], wanted: dict[str, IconContent]) -> list[str]:
+    gone = []
+    for key in icons:
+        if key not in wanted:
+            gone.append(key)
+    return gone

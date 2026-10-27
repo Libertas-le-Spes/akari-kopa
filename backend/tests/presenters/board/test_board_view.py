@@ -1,6 +1,7 @@
 import unittest
 
 from akari_kopa.attention.merge_request.role import REVIEWING
+from akari_kopa.attention.merge_request.web_address import RefusedAddress
 from akari_kopa.presenters.board.board_view import board_view
 from akari_kopa.use_cases.listing.board import Board, NotUpdated
 from tests.fakes import a_merge_request
@@ -41,3 +42,20 @@ class BoardView(unittest.TestCase):
     def test_the_bar_reads_it_as_plain_json(self):
         raw = board_view(Board([a_merge_request()], [])).as_json()
         self.assertEqual(raw["groups"][0]["services"][0]["merge_requests"][0]["look"], {"colour": "#3fb950", "ring": False, "faded": False})
+
+    def test_each_merge_request_is_known_by_service_project_and_reference_not_by_its_address(self):
+        view = board_view(Board([a_merge_request(service="gitlab", project="team/app", reference="!4")], []))
+        self.assertEqual(view.merge_requests()[0].key, "gitlab team/app !4")
+
+    def test_an_address_that_was_refused_says_why_in_the_details(self):
+        refused = RefusedAddress("only https addresses are opened", "forge.example")
+        view = board_view(Board([a_merge_request(address=refused)], []))
+        self.assertEqual(view.merge_requests()[0].details, "me/thing · yours · no pipeline · not opened: only https addresses are opened")
+
+    def test_the_bar_gets_the_address_text_and_nothing_for_a_refused_one(self):
+        refused = RefusedAddress("only https addresses are opened", "forge.example")
+        raw = board_view(Board([a_merge_request(), a_merge_request(reference="#2", address=refused)], [])).as_json()
+        addresses = []
+        for merge_request in raw["groups"][0]["services"][0]["merge_requests"]:
+            addresses.append(merge_request["address"]["text"])
+        self.assertEqual(addresses, ["https://forge.example/1", ""])

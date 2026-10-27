@@ -34,9 +34,14 @@ BarWidget {
     if (screen && focused && screen.name === focused.name) popupOpen = !popupOpen
   }
 
+  function isWebPage(address) {
+    return typeof address === "string" && address.indexOf("https://") === 0
+  }
+
   function openInBrowser(mergeRequest) {
     popupOpen = false
-    Qt.openUrlExternally(mergeRequest.url)
+    var address = mergeRequest.address.text
+    if (isWebPage(address)) Qt.openUrlExternally(address)
   }
 
   visible: mergeRequests.length > 0 || stale

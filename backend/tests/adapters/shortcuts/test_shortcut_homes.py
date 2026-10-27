@@ -1,4 +1,3 @@
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,20 +10,22 @@ from akari_kopa.adapters.shortcuts.kde import Kde
 from akari_kopa.adapters.shortcuts.mate import Mate
 from akari_kopa.adapters.shortcuts.sway import Sway
 from akari_kopa.adapters.shortcuts.xfce import Xfce
-from tests.fakes import FakeCommandLine
+from tests.adapters.shortcuts.memory_files import MemoryFiles
+from tests.fake_command_line import FakeCommandLine
 
 CHOOSE = "/opt/akari-kopa/backend/bin/akari-kopa choose"
 
 
+HOME = Path("/home/someone")
+
+
 def environment(*desktops: str) -> Environment:
-    home = Path(tempfile.mkdtemp())
-    return Environment(frozenset(desktops), home / ".config", home / ".local" / "share")
+    return Environment(frozenset(desktops), HOME / ".config", HOME / ".local" / "share")
 
 
-def config(environment: Environment, relative: str, text: str = "existing = true\n") -> Path:
+def config(files: MemoryFiles, environment: Environment, relative: str) -> Path:
     path = environment.config_home / relative
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text)
+    files.texts[path] = "existing = true\n"
     return path
 
 
@@ -39,29 +40,33 @@ class ConfigFileDesktops(unittest.TestCase):
         for kind, relative, line, reload in cases:
             with self.subTest(kind.__name__):
                 session = environment("hyprland", "sway")
-                path = config(session, relative)
+                files = MemoryFiles()
+                path = config(files, session, relative)
                 command_line = FakeCommandLine({"omarchy-shell"})
-                home = kind(session, command_line, CHOOSE)
+                home = kind(session, command_line, files, CHOOSE)
                 self.assertTrue(home.here())
                 home.add()
-                self.assertEqual(path.read_text(), f"existing = true\n{line}\n")
+                self.assertEqual(files.texts[path], f"existing = true\n{line}\n")
                 self.assertTrue(home.has_it())
                 self.assertIn(reload, command_line.asked)
                 home.remove()
-                self.assertEqual(path.read_text(), "existing = true\n")
+                self.assertEqual(files.texts[path], "existing = true\n")
+                self.assertEqual(files.written, [(path, "existing = true\n"), (path, f"existing = true\n{line}\n")])
 
     def test_hyprland_without_omarchy_is_not_omarchy(self):
         session = environment("hyprland")
-        config(session, "hypr/bindings.lua")
-        self.assertFalse(Omarchy(session, FakeCommandLine(set()), CHOOSE).here())
+        files = MemoryFiles()
+        config(files, session, "hypr/bindings.lua")
+        self.assertFalse(Omarchy(session, FakeCommandLine(set()), files, CHOOSE).here())
 
     def test_a_desktop_without_its_config_file_is_not_here(self):
-        self.assertFalse(Sway(environment("sway"), FakeCommandLine(set()), CHOOSE).here())
+        self.assertFalse(Sway(environment("sway"), FakeCommandLine(set()), MemoryFiles(), CHOOSE).here())
 
     def test_another_desktop_is_not_here(self):
         session = environment("gnome")
-        config(session, "sway/config")
-        self.assertFalse(Sway(session, FakeCommandLine(set()), CHOOSE).here())
+        files = MemoryFiles()
+        config(files, session, "sway/config")
+        self.assertFalse(Sway(session, FakeCommandLine(set()), files, CHOOSE).here())
 
 
 class SettingsDesktops(unittest.TestCase):
@@ -108,9 +113,10 @@ class SettingsDesktops(unittest.TestCase):
     def test_kde_launches_a_hidden_entry_bound_in_global_shortcuts(self):
         session = environment("kde")
         command_line = FakeCommandLine({"kwriteconfig6"})
-        home = Kde(session, command_line, CHOOSE)
+        files = MemoryFiles()
+        home = Kde(session, command_line, files, CHOOSE)
         home.add()
-        launcher = (session.data_home / "applications" / "akari-kopa-choose.desktop").read_text()
+        launcher = files.texts[session.data_home / "applications" / "akari-kopa-choose.desktop"]
         self.assertIn(f"Exec={CHOOSE}\n", launcher)
         self.assertIn(("kwriteconfig6", "--file", "kglobalshortcutsrc", "--group", "services", "--group", "akari-kopa-choose.desktop",
                        "--key", "_launch", "Meta+Ctrl+M"), command_line.asked)

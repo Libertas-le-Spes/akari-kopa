@@ -2,6 +2,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
+launcher="$here/backend/bin/akari-kopa"
 command_path="$HOME/.local/bin/akari-kopa"
 short_path="$HOME/.local/bin/akari"
 autostart="${XDG_CONFIG_HOME:-$HOME/.config}/autostart/akari-kopa-tray.desktop"
@@ -27,23 +28,53 @@ package_for() {
   echo "${packages[$(package_manager):$1]:-$1}"
 }
 
+is_ours() {
+  [ -L "$1" ] && [ "$(readlink -f "$1")" = "$(readlink -f "$launcher")" ]
+}
+
+refuse_unsafe_path() {
+  if [[ ! $1 =~ ^[A-Za-z0-9/._-]+$ ]]; then
+    echo "Akari Kopa needs a folder whose name has only letters, digits, '/', '.', '_' and '-': $1" >&2
+    exit 1
+  fi
+}
+
+link_command() {
+  if [ -e "$1" ] || [ -L "$1" ]; then
+    if ! is_ours "$1"; then
+      echo "$1 is another program; Akari Kopa leaves it alone. Remove it first to install Akari Kopa there." >&2
+      exit 1
+    fi
+    return
+  fi
+  ln -s "$launcher" "$1"
+}
+
+unlink_command() {
+  if is_ours "$1"; then
+    rm -f "$1"
+  fi
+}
+
 remove() {
-  pkill -f "python3[^ ]* -m akari_kopa tray" || true
-  "$here/backend/bin/akari-kopa" remove-shortcut || true
-  rm -f "$command_path" "$short_path" "$autostart"
+  pkill -u "$(id -u)" -f "python3 -I [^ ]*/backend/bin/start.py tray" || true
+  "$launcher" remove-shortcut || true
+  unlink_command "$command_path"
+  unlink_command "$short_path"
+  rm -f "$autostart"
   echo "Removed the Akari Kopa tray."
 }
 
 missing_packages() {
   command -v python3 >/dev/null || { package_for python3; return; }
-  python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))' || package_for python3
-  python3 -c 'import gi; gi.require_version("Gio", "2.0")' 2>/dev/null || package_for gi
+  python3 -I -c 'import sys; sys.exit(sys.version_info < (3, 10))' || package_for python3
+  python3 -I -c 'import gi; gi.require_version("Gio", "2.0")' 2>/dev/null || package_for gi
 }
 
 install_tray() {
   mkdir -p "$(dirname "$command_path")" "$(dirname "$autostart")"
-  ln -sf "$here/backend/bin/akari-kopa" "$command_path"
-  ln -sf "$here/backend/bin/akari-kopa" "$short_path"
+  link_command "$command_path"
+  link_command "$short_path"
   cat > "$autostart" <<DESKTOP
 [Desktop Entry]
 Type=Application
@@ -67,6 +98,9 @@ if [ "${1:-}" = "--remove" ]; then
   remove
   exit 0
 fi
+
+refuse_unsafe_path "$here"
+refuse_unsafe_path "$command_path"
 
 missing=$(missing_packages | sort -u | tr '\n' ' ')
 if [ -n "$missing" ]; then

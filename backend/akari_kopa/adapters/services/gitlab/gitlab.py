@@ -20,18 +20,24 @@ class GitLab:
         return self.cli.installed()
 
     def merge_requests(self) -> list[MergeRequest]:
-        return [found for host in self.cli.hosts() for found in self._on(host)]
+        found = []
+        for host in self.cli.hosts():
+            found += self._on(host)
+        return found
 
     def _on(self, host: str) -> list[MergeRequest]:
         me = self.cli.ask(host, query.BOARD)["data"]["currentUser"]
         reading = ConversationReading(me["username"])
-        mine = [self._mine(host, node, reading) for node in me["authoredMergeRequests"]["nodes"]]
-        reviewing = [merge_request(node, REVIEWING) for node in me["reviewRequestedMergeRequests"]["nodes"]]
-        return mine + reviewing
+        found = []
+        for node in me["authoredMergeRequests"]["nodes"]:
+            found.append(self._mine(host, node, reading))
+        for node in me["reviewRequestedMergeRequests"]["nodes"]:
+            found.append(merge_request(node, host, REVIEWING))
+        return found
 
     def _mine(self, host: str, node: dict, reading: ConversationReading) -> MergeRequest:
         discussions = self._all_discussions(host, node)
-        return replace(merge_request(node, MINE), conversation=reading.conversation(discussions), repository=repository_of(node))
+        return replace(merge_request(node, host, MINE), conversation=reading.conversation(discussions), repository=repository_of(node))
 
     def _all_discussions(self, host: str, node: dict) -> list[dict]:
         page = node["discussions"]

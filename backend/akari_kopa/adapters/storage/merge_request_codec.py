@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from akari_kopa.attention.conversation.conversation import Conversation
+from akari_kopa.adapters.storage.conversation_codec import decoded_conversation, encoded_conversation
+from akari_kopa.attention.merge_request.address_check import address_of
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
 from akari_kopa.attention.merge_request.role import ROLES
 from akari_kopa.attention.pipeline.pipeline import PIPELINES
@@ -8,29 +9,34 @@ from akari_kopa.attention.repository.follow_up import REPOSITORIES
 
 
 def encoded(merge_request: MergeRequest) -> dict:
-    conversation = merge_request.conversation
-    return {
-        **{name: getattr(merge_request, name) for name in ("service", "reference", "title", "url", "project", "author")},
+    found = {
+        "service": merge_request.service,
+        "reference": merge_request.reference,
+        "title": merge_request.title,
+        "address": merge_request.address.text,
+        "forgeHost": merge_request.address.forge_host,
+        "project": merge_request.project,
+        "author": merge_request.author,
         "role": merge_request.role.name,
         "pipeline": merge_request.pipeline.name,
         "opened": merge_request.opened.isoformat(),
         "repository": merge_request.repository.name,
-        "unresolvedThreads": [moment.isoformat() for moment in conversation.unresolved_threads],
-        "comments": [moment.isoformat() for moment in conversation.comments],
-        "lastAnswer": conversation.last_answer.isoformat() if conversation.last_answer else None,
     }
+    found.update(encoded_conversation(merge_request.conversation))
+    return found
 
 
 def decoded(raw: dict) -> MergeRequest:
     return MergeRequest(
-        **{name: raw[name] for name in ("service", "reference", "title", "url", "project", "author")},
+        service=raw["service"],
         role=ROLES[raw["role"]],
+        reference=raw["reference"],
+        title=raw["title"],
+        address=address_of(raw["address"], raw["forgeHost"]),
+        project=raw["project"],
+        author=raw["author"],
         pipeline=PIPELINES[raw["pipeline"]],
         opened=datetime.fromisoformat(raw["opened"]),
         repository=REPOSITORIES[raw["repository"]],
-        conversation=Conversation(
-            tuple(datetime.fromisoformat(moment) for moment in raw["unresolvedThreads"]),
-            tuple(datetime.fromisoformat(moment) for moment in raw["comments"]),
-            datetime.fromisoformat(raw["lastAnswer"]) if raw["lastAnswer"] else None,
-        ),
+        conversation=decoded_conversation(raw),
     )

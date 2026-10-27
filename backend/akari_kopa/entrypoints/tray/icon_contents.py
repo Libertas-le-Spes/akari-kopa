@@ -1,6 +1,8 @@
+from functools import partial
 from typing import Callable
 
-from akari_kopa.presenters.board.board_view import BoardView, MergeRequestView
+from akari_kopa.entrypoints.tray.not_updated_icon import not_updated_entries, only_not_updated
+from akari_kopa.presenters.board.views import BoardView, MergeRequestView
 from akari_kopa.presenters.orb.pixmap import pixmaps
 from akari_kopa.use_cases.desktop.ports import SEPARATOR, Desktop, IconContent, MenuEntry
 
@@ -11,12 +13,16 @@ class IconContents:
         self.check_now = check_now
 
     def wanted(self, view: BoardView) -> dict[str, IconContent]:
-        wanted = {merge_request.key: self._merge_request(merge_request, view) for merge_request in view.merge_requests()}
-        return wanted or self._only_not_updated(view)
+        wanted = {}
+        for merge_request in view.merge_requests():
+            wanted[merge_request.key] = self._merge_request(merge_request, view)
+        if wanted:
+            return wanted
+        return only_not_updated(view, self.desktop, self.check_now)
 
     def _merge_request(self, merge_request: MergeRequestView, view: BoardView) -> IconContent:
         description = f"{merge_request.title}\n{merge_request.service} · {merge_request.details}"
-        opening = lambda: self.desktop.open_in_browser(merge_request.url)
+        opening = partial(merge_request.address.open_with, self.desktop.open_in_browser)
         return IconContent(
             title=merge_request.summary,
             description=description,
@@ -28,22 +34,6 @@ class IconContents:
                 SEPARATOR,
                 MenuEntry("Open in browser", opening),
                 MenuEntry("Check now", self.check_now),
-            ] + _not_updated_entries(view),
-            on_activate=lambda: self.desktop.notify(merge_request.summary, description),
+            ] + not_updated_entries(view),
+            on_activate=partial(self.desktop.notify, merge_request.summary, description),
         )
-
-    def _only_not_updated(self, view: BoardView) -> dict[str, IconContent]:
-        if not view.not_updated:
-            return {}
-        reasons = "\n".join(view.not_updated)
-        return {"not updated": IconContent(
-            title=view.not_updated_summary,
-            description=reasons,
-            pixmaps=pixmaps(view.not_updated_look),
-            menu=[MenuEntry("Check now", self.check_now)] + _not_updated_entries(view),
-            on_activate=lambda: self.desktop.notify(view.not_updated_summary, reasons),
-        )}
-
-
-def _not_updated_entries(view: BoardView) -> list[MenuEntry]:
-    return [SEPARATOR, *(MenuEntry(f"Not updated: {reason}") for reason in view.not_updated)] if view.not_updated else []

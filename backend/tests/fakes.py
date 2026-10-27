@@ -5,10 +5,12 @@ from akari_kopa.adapters.storage.answer_folder import StoredAnswer
 from akari_kopa.attention.conversation.conversation import Conversation
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
 from akari_kopa.attention.merge_request.role import MINE
+from akari_kopa.attention.merge_request.web_address import WebAddress
 from akari_kopa.attention.pipeline.pipeline import NO_PIPELINE
 from akari_kopa.use_cases.listing.ports import ServiceError
 
 OPENED = datetime(2026, 10, 1, tzinfo=timezone.utc)
+FORGE_PAGE = WebAddress("https://forge.example/1", "forge.example")
 
 
 def on_day(day: float) -> datetime:
@@ -16,7 +18,7 @@ def on_day(day: float) -> datetime:
 
 
 def a_merge_request(**changes) -> MergeRequest:
-    plain = MergeRequest("forge", MINE, "#1", "Fix the thing", "https://forge.example/1", "me/thing", "Me", NO_PIPELINE, OPENED)
+    plain = MergeRequest("forge", MINE, "#1", "Fix the thing", FORGE_PAGE, "me/thing", "Me", NO_PIPELINE, OPENED)
     return replace(plain, **changes)
 
 
@@ -64,45 +66,3 @@ class FakeAnswers:
 
     def keep(self, service, merge_requests, given):
         self.kept[service] = StoredAnswer(merge_requests, given)
-
-
-class FakeCommandLine:
-    def __init__(self, tools: set[str], answers: dict[tuple, object] | None = None, said: dict[tuple, str] | None = None):
-        self.tools = tools
-        self.answers = answers or {}
-        self.said = said or {}
-        self.asked: list[tuple] = []
-
-    def installed(self, tool: str) -> bool:
-        return tool in self.tools
-
-    def succeeds(self, *arguments: str) -> bool:
-        return arguments in self.said or arguments[:2] == ("tea", "api")
-
-    def everything_said(self, *arguments: str) -> str:
-        return self.said.get(arguments, "")
-
-    def answer(self, *arguments: str) -> str | None:
-        self.asked.append(arguments)
-        return self.said.get(arguments)
-
-    def text(self, *arguments: str) -> str:
-        self.asked.append(arguments)
-        self._settle(arguments)
-        return ""
-
-    def start(self, *arguments: str) -> None:
-        self.asked.append(arguments)
-
-    def _settle(self, arguments: tuple) -> None:
-        if arguments[:2] == ("gsettings", "set"):
-            self.said[("gsettings", "get", arguments[2], arguments[3])] = arguments[4]
-        if arguments[:2] == ("gsettings", "reset"):
-            self.said.pop(("gsettings", "get", arguments[2], arguments[3]), None)
-
-    def json(self, *arguments: str):
-        self.asked.append(arguments)
-        for key, answer in self.answers.items():
-            if all(part in arguments for part in key):
-                return answer
-        raise ServiceError(f"nothing prepared for {arguments}")

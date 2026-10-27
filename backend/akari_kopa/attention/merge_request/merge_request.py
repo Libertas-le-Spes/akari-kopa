@@ -3,6 +3,7 @@ from datetime import datetime
 
 from akari_kopa.attention.conversation.conversation import QUIET, Conversation
 from akari_kopa.attention.merge_request.role import Role
+from akari_kopa.attention.merge_request.web_address import RefusedAddress, WebAddress
 from akari_kopa.attention.pipeline.pipeline import Pipeline
 from akari_kopa.attention.repository.follow_up import OWN
 from akari_kopa.attention.repository.repository import Repository
@@ -16,7 +17,7 @@ class MergeRequest:
     role: Role
     reference: str
     title: str
-    url: str
+    address: WebAddress | RefusedAddress
     project: str
     author: str
     pipeline: Pipeline

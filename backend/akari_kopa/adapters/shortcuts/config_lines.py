@@ -1,23 +1,41 @@
 from pathlib import Path
 
+from akari_kopa.adapters.shortcuts.text_files import TextFiles
+
 
 class ConfigLines:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, files: TextFiles):
         self.path = path
+        self.files = files
 
     def exists(self) -> bool:
-        return self.path.is_file()
+        return self.files.exists(self.path)
 
     def has(self, fragment: str) -> bool:
-        return self.exists() and any(fragment in line for line in self._lines())
+        if not self.exists():
+            return False
+        for line in self._lines(self.files.read(self.path)):
+            if fragment in line:
+                return True
+        return False
 
     def add(self, line: str) -> None:
-        text = self.path.read_text(encoding="utf-8")
-        self.path.write_text(text + ("" if text.endswith("\n") or not text else "\n") + line + "\n", encoding="utf-8")
+        text = self.files.read(self.path)
+        self.files.write_whole(self.path, _ending_a_line(text) + line + "\n", was=text)
 
     def remove(self, fragment: str) -> None:
-        kept = [line for line in self._lines() if fragment not in line]
-        self.path.write_text("".join(kept), encoding="utf-8")
+        text = self.files.read(self.path)
+        kept = []
+        for line in self._lines(text):
+            if fragment not in line:
+                kept.append(line)
+        self.files.write_whole(self.path, "".join(kept), was=text)
 
-    def _lines(self) -> list[str]:
-        return self.path.read_text(encoding="utf-8").splitlines(keepends=True)
+    def _lines(self, text: str) -> list[str]:
+        return text.splitlines(keepends=True)
+
+
+def _ending_a_line(text: str) -> str:
+    if not text or text.endswith("\n"):
+        return text
+    return text + "\n"

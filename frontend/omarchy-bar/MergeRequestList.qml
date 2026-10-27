@@ -70,7 +70,7 @@ KeyboardPanel {
 
                 MergeRequestLine {
                   required property var modelData
-                  readonly property int position: list.mergeRequests.findIndex(function(other) { return other.url === modelData.url })
+                  readonly property int position: list.mergeRequests.findIndex(function(other) { return other.key === modelData.key })
                   width: sections.width
                   bar: list.bar
                   mergeRequest: modelData

@@ -3,6 +3,10 @@ from typing import Protocol
 KEYS = "Super + Ctrl + M"
 
 
+class ShortcutRefused(Exception):
+    pass
+
+
 class ShortcutHome(Protocol):
     name: str
 
