@@ -1,4 +1,5 @@
-from akari_kopa.presenters.board.board_view import BoardView, board_view
+from akari_kopa.presenters.board.board_view import board_view
+from akari_kopa.presenters.board.views import BoardView
 from akari_kopa.use_cases.choosing.ports import Browser, Chooser, Option
 from akari_kopa.use_cases.listing.listing import Listing
 
@@ -13,22 +14,30 @@ class Choose:
 
     def run(self) -> str:
         if self.chooser is None:
-            return "akari-kopa: install zenity or kdialog to choose a merge request from a list"
+            return "akari-kopa: install zenity to choose a merge request from a list"
         view = self._view()
-        options = [Option(mr.key, mr.summary, f"{mr.title} · {mr.service} · {mr.details}") for mr in view.merge_requests()]
-        chosen = self.chooser.choose(TITLE, _question(options), options)
-        self._open(view, chosen)
+        options = _options(view)
+        chosen = view.find(self.chooser.choose(TITLE, _question(options), options))
+        if chosen is not None:
+            chosen.address.open_with(self.browser.open)
         return ""
 
     def _view(self) -> BoardView:
         remembered = self.listing.remembered()
-        return board_view(remembered if remembered.merge_requests else self.listing.board())
+        if remembered.merge_requests:
+            return board_view(remembered)
+        return board_view(self.listing.board())
 
-    def _open(self, view: BoardView, chosen: str | None) -> None:
-        url = next((mr.url for mr in view.merge_requests() if mr.key == chosen), None)
-        if url:
-            self.browser.open(url)
+
+def _options(view: BoardView) -> list[Option]:
+    options = []
+    for merge_request in view.merge_requests():
+        detail = f"{merge_request.title} · {merge_request.service} · {merge_request.details}"
+        options.append(Option(merge_request.key, merge_request.summary, detail))
+    return options
 
 
 def _question(options: list[Option]) -> str:
-    return "Open which one?" if options else "No open merge requests right now."
+    if options:
+        return "Open which one?"
+    return "No open merge requests right now."

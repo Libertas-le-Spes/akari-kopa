@@ -20,7 +20,7 @@ A merge request to a repository you cannot push to shows for its first three day
 ## Omarchy
 
 ```sh
-omarchy plugin add https://github.com/Libertas-le-Spes/akari-kopa.git --enable --yes
+omarchy plugin add https://github.com/Libertas-le-Spes/akari-kopa.git --enable
 omarchy bar put kayu.akari-kopa --section center
 ```
 
@@ -28,23 +28,27 @@ For the `akari-kopa` command, its short form `akari`, and the Super + Ctrl + M s
 
 ```sh
 mkdir -p ~/.local/bin
-ln -sf ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari-kopa
-ln -sf ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari
+ln -s ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari-kopa
+ln -s ~/.config/omarchy/plugins/kayu.akari-kopa/backend/bin/akari-kopa ~/.local/bin/akari
 akari shortcut
 ```
+
+`ln -s` stops rather than replace a command you already have by either name.
 
 To update, then restart the bar, which only loads a plugin's new code when it starts:
 
 ```sh
-omarchy plugin update kayu.akari-kopa --yes
+omarchy plugin update kayu.akari-kopa
 omarchy-restart-shell
 ```
+
+The update shows what changed and asks before it applies anything. The plugin runs as you, next to your forge logins, so read the change before you say yes.
 
 To remove it, take the shortcut and the commands out, then the plugin:
 
 ```sh
 akari remove-shortcut
-rm -f ~/.local/bin/akari ~/.local/bin/akari-kopa
+find ~/.local/bin -maxdepth 1 -lname '*/kayu.akari-kopa/backend/bin/akari-kopa' -delete
 omarchy plugin remove kayu.akari-kopa --yes
 ```
 
@@ -60,7 +64,7 @@ akari tray &
 
 `akari` is the short form of `akari-kopa`. It is not `kopa`, because an AUR clipboard manager already installs a command by that name.
 
-It starts with your session from then on, and Super + Ctrl + M opens a list of your merge requests; pick one to open it. The shortcut is set the way your desktop keeps its own: KDE Plasma, GNOME, Budgie, Cinnamon, MATE, Xfce, Hyprland and Sway. The list needs zenity or kdialog. `install.sh --remove` undoes all of it.
+It starts with your session from then on, and Super + Ctrl + M opens a list of your merge requests; pick one to open it. The shortcut is set the way your desktop keeps its own: KDE Plasma, GNOME, Budgie, Cinnamon, MATE, Xfce, Hyprland and Sway. The list needs zenity. `install.sh --remove` undoes all of it.
 
 ## Services
 
@@ -83,6 +87,12 @@ az login --allow-no-subscriptions
 
 When a service cannot be reached, its last answer stays on show, faded, with the reason in the list.
 
+Akari Kopa only reads, so for GitLab a token with only `read_api` is enough (`glab auth login` lets you paste one). GitHub has no read-only login that covers private repositories across several owners, so `gh` keeps its usual login. Azure DevOps uses your full `az` login, which can do anything you can do there: Akari Kopa has no way yet to take a read-only token instead.
+
+A merge request opens only when its address is an `https` page on the forge it came from; any other address is shown with the reason and opens nothing.
+
+On a machine other people log in to, mount `/proc` with `hidepid=invisible`: on Linux, any account can otherwise read the command line of your programs, and `tea` puts repository names in its own.
+
 ## Needs
 
 Python 3.10 or newer. The tray also needs PyGObject (`python3-gi`, `python3-gobject` or `python-gobject`); `install.sh` names whatever is missing.
@@ -94,5 +104,5 @@ Add a class to `backend/akari_kopa/adapters/services/` that says whether it is s
 ## Tests
 
 ```sh
-cd backend && python3 -m unittest
+cd backend && python3 -I -m unittest
 ```

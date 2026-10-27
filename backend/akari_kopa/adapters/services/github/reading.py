@@ -1,5 +1,7 @@
+from akari_kopa.adapters.services.github.people import People
 from akari_kopa.adapters.services.moment import latest, moment, moments
 from akari_kopa.attention.conversation.conversation import Conversation
+from akari_kopa.attention.merge_request.address_check import address_of
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
 from akari_kopa.attention.merge_request.role import Role
 from akari_kopa.attention.pipeline.pipeline import PipelineWords
@@ -9,57 +11,85 @@ WORDS = PipelineWords(frozenset({"SUCCESS"}), frozenset({"FAILURE", "ERROR"}))
 CAN_PUSH = {"ADMIN", "MAINTAIN", "WRITE"}
 
 
-def merge_request(node: dict, role: Role) -> MergeRequest:
+def merge_request(node: dict, host: str, role: Role) -> MergeRequest:
     commit = node["commits"]["nodes"][0]["commit"]
-    author = node["author"] or {}
     return MergeRequest(
         service="github",
         role=role,
         reference=f"#{node['number']}",
         title=node["title"],
-        url=node["url"],
+        address=address_of(node["url"], host),
         project=node["repository"]["nameWithOwner"],
-        author=author.get("name") or author.get("login", ""),
-        pipeline=WORDS.read([(commit["statusCheckRollup"] or {}).get("state")]),
+        author=_author(node["author"]),
+        pipeline=WORDS.read([_checks_state(commit["statusCheckRollup"])]),
         opened=moment(node["createdAt"]),
     )
 
 
+def _author(author: dict | None) -> str:
+    if author is None:
+        return ""
+    if author.get("name"):
+        return author["name"]
+    return author.get("login", "")
+
+
+def _checks_state(rollup: dict | None) -> str | None:
+    if rollup is None:
+        return None
+    return rollup.get("state")
+
+
 def repository_of(node: dict):
-    return OWN if node["repository"]["viewerPermission"] in CAN_PUSH else SOMEONE_ELSES
+    if node["repository"]["viewerPermission"] in CAN_PUSH:
+        return OWN
+    return SOMEONE_ELSES
 
 
 class ConversationReading:
     def __init__(self, me: str):
-        self.me = me
+        self.people = People(me)
 
     def conversation(self, node: dict, threads: list[dict]) -> Conversation:
         return Conversation(
-            unresolved_threads=moments(first["createdAt"] for first in self._unresolved_openers(threads) if self._from_others(first)),
+            unresolved_threads=moments(self._waiting_threads(threads)),
             comments=moments(self._others_comments(node)),
             last_answer=latest(self._my_answers(node)),
         )
 
-    def _unresolved_openers(self, threads: list[dict]) -> list[dict]:
-        return [thread["comments"]["nodes"][0] for thread in threads if not thread["isResolved"] and thread["comments"]["nodes"]]
+    def _waiting_threads(self, threads: list[dict]) -> list[str]:
+        waiting = []
+        for thread in threads:
+            if self._waits(thread):
+                waiting.append(thread["comments"]["nodes"][0]["createdAt"])
+        return waiting
 
-    def _others_comments(self, node: dict):
-        yield from (comment["createdAt"] for comment in node["comments"]["nodes"] if self._from_others(comment))
-        yield from (review["submittedAt"] for review in node["reviews"]["nodes"] if self._from_others(review) and _says_something(review))
+    def _waits(self, thread: dict) -> bool:
+        openers = thread["comments"]["nodes"]
+        if thread["isResolved"] or not openers:
+            return False
+        return self.people.from_others(openers[0])
 
-    def _my_answers(self, node: dict):
-        yield from (comment["createdAt"] for comment in node["comments"]["nodes"] if self._from_me(comment))
-        yield from (review["submittedAt"] for review in node["reviews"]["nodes"] if self._from_me(review))
-        yield node["commits"]["nodes"][0]["commit"]["committedDate"]
+    def _others_comments(self, node: dict) -> list[str]:
+        found = []
+        for comment in node["comments"]["nodes"]:
+            if self.people.from_others(comment):
+                found.append(comment["createdAt"])
+        for review in node["reviews"]["nodes"]:
+            if self.people.from_others(review) and _says_something(review):
+                found.append(review["submittedAt"])
+        return found
 
-    def _from_me(self, said: dict) -> bool:
-        return (said["author"] or {}).get("login") == self.me
-
-    def _from_others(self, said: dict) -> bool:
-        return said["author"] is not None and self._another_person(said["author"])
-
-    def _another_person(self, author: dict) -> bool:
-        return author["login"] != self.me and author["__typename"] != "Bot"
+    def _my_answers(self, node: dict) -> list[str]:
+        found = []
+        for comment in node["comments"]["nodes"]:
+            if self.people.from_me(comment):
+                found.append(comment["createdAt"])
+        for review in node["reviews"]["nodes"]:
+            if self.people.from_me(review):
+                found.append(review["submittedAt"])
+        found.append(node["commits"]["nodes"][0]["commit"]["committedDate"])
+        return found
 
 
 def _says_something(review: dict) -> bool:

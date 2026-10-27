@@ -13,7 +13,7 @@ MAY_IMPORT = {
     "wiring": {"attention", "use_cases", "adapters", "wiring"},
 }
 
-STANDARD_LIBRARY_ONLY_OUTSIDE = {"subprocess", "urllib", "http", "socket", "os", "shutil", "threading", "pathlib", "json", "gi"}
+REACHING_OUTSIDE = {"subprocess", "urllib.request", "urllib.error", "http", "socket", "os", "shutil", "threading", "pathlib", "json", "gi"}
 
 
 def ring_of(module: str) -> str:
@@ -30,29 +30,44 @@ def imports_of(path: Path) -> list[tuple[int, str]]:
     return found
 
 
+def reaches_outside(imported: str) -> bool:
+    for module in REACHING_OUTSIDE:
+        if imported == module or imported.startswith(module + "."):
+            return True
+    return False
+
+
 def modules() -> list[tuple[Path, str]]:
     found = [(path, ".".join(path.relative_to(PACKAGE.parent).with_suffix("").parts)) for path in sorted(PACKAGE.rglob("*.py"))]
-    return [(path, module) for path, module in found if module.count(".") > 0 and not module.endswith(("__main__", "__init__"))]
+    inside = []
+    for path, module in found:
+        if module.count(".") > 0 and not module.endswith(("__main__", "__init__")):
+            inside.append((path, module))
+    return inside
 
 
 class DependenciesPointInward(unittest.TestCase):
     def test_no_ring_imports_a_ring_outside_it(self):
-        breaches = [
-            f"{path.relative_to(PACKAGE.parent)}:{line} ({ring_of(module)}) imports {imported}"
-            for path, module in modules()
-            for line, imported in imports_of(path)
-            if imported.startswith("akari_kopa.") and ring_of(imported) not in MAY_IMPORT[ring_of(module)]
-        ]
+        breaches = []
+        for path, module, line, imported in every_import():
+            if imported.startswith("akari_kopa.") and ring_of(imported) not in MAY_IMPORT[ring_of(module)]:
+                breaches.append(f"{path.relative_to(PACKAGE.parent)}:{line} ({ring_of(module)}) imports {imported}")
         self.assertEqual(breaches, [])
 
     def test_the_rules_reach_nothing_outside_the_program(self):
-        reaching = [
-            f"{path.relative_to(PACKAGE.parent)}:{line} imports {imported}"
-            for path, module in modules() if ring_of(module) == "attention"
-            for line, imported in imports_of(path)
-            if imported.split(".")[0] in STANDARD_LIBRARY_ONLY_OUTSIDE
-        ]
+        reaching = []
+        for path, module, line, imported in every_import():
+            if ring_of(module) == "attention" and reaches_outside(imported):
+                reaching.append(f"{path.relative_to(PACKAGE.parent)}:{line} imports {imported}")
         self.assertEqual(reaching, [])
+
+
+def every_import() -> list[tuple[Path, str, int, str]]:
+    found = []
+    for path, module in modules():
+        for line, imported in imports_of(path):
+            found.append((path, module, line, imported))
+    return found
 
 
 if __name__ == "__main__":

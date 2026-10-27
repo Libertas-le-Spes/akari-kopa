@@ -6,6 +6,8 @@ gi.require_version("Gio", "2.0")
 gi.require_version("GLib", "2.0")
 from gi.repository import Gio, GLib
 
+from akari_kopa.adapters.desktop.markup import tool_tip
+from akari_kopa.adapters.desktop.status_notifier_interfaces import INTERFACES
 from akari_kopa.use_cases.desktop.ports import IconContent, MenuEntry
 
 ITEM_PATH = "/StatusNotifierItem"
@@ -17,87 +19,20 @@ CHANGED_SIGNALS = ("NewTitle", "NewIcon", "NewToolTip")
 OWN_NAME_REPLACING_NONE = 4
 ROOT = 0
 
-INTERFACES = Gio.DBusNodeInfo.new_for_xml("""
-<node>
-  <interface name="org.kde.StatusNotifierItem">
-    <property name="Category" type="s" access="read"/>
-    <property name="Id" type="s" access="read"/>
-    <property name="Title" type="s" access="read"/>
-    <property name="Status" type="s" access="read"/>
-    <property name="WindowId" type="i" access="read"/>
-    <property name="IconName" type="s" access="read"/>
-    <property name="IconPixmap" type="a(iiay)" access="read"/>
-    <property name="OverlayIconName" type="s" access="read"/>
-    <property name="AttentionIconName" type="s" access="read"/>
-    <property name="IconThemePath" type="s" access="read"/>
-    <property name="ToolTip" type="(sa(iiay)ss)" access="read"/>
-    <property name="ItemIsMenu" type="b" access="read"/>
-    <property name="Menu" type="o" access="read"/>
-    <method name="ContextMenu"><arg name="x" type="i" direction="in"/><arg name="y" type="i" direction="in"/></method>
-    <method name="Activate"><arg name="x" type="i" direction="in"/><arg name="y" type="i" direction="in"/></method>
-    <method name="SecondaryActivate"><arg name="x" type="i" direction="in"/><arg name="y" type="i" direction="in"/></method>
-    <method name="Scroll"><arg name="delta" type="i" direction="in"/><arg name="orientation" type="s" direction="in"/></method>
-    <signal name="NewTitle"/>
-    <signal name="NewIcon"/>
-    <signal name="NewToolTip"/>
-    <signal name="NewStatus"><arg name="status" type="s"/></signal>
-  </interface>
-  <interface name="com.canonical.dbusmenu">
-    <property name="Version" type="u" access="read"/>
-    <property name="TextDirection" type="s" access="read"/>
-    <property name="Status" type="s" access="read"/>
-    <property name="IconThemePath" type="as" access="read"/>
-    <method name="GetLayout">
-      <arg name="parentId" type="i" direction="in"/>
-      <arg name="recursionDepth" type="i" direction="in"/>
-      <arg name="propertyNames" type="as" direction="in"/>
-      <arg name="revision" type="u" direction="out"/>
-      <arg name="layout" type="(ia{sv}av)" direction="out"/>
-    </method>
-    <method name="GetGroupProperties">
-      <arg name="ids" type="ai" direction="in"/>
-      <arg name="propertyNames" type="as" direction="in"/>
-      <arg name="properties" type="a(ia{sv})" direction="out"/>
-    </method>
-    <method name="GetProperty">
-      <arg name="id" type="i" direction="in"/>
-      <arg name="name" type="s" direction="in"/>
-      <arg name="value" type="v" direction="out"/>
-    </method>
-    <method name="Event">
-      <arg name="id" type="i" direction="in"/>
-      <arg name="eventId" type="s" direction="in"/>
-      <arg name="data" type="v" direction="in"/>
-      <arg name="timestamp" type="u" direction="in"/>
-    </method>
-    <method name="EventGroup">
-      <arg name="events" type="a(isvu)" direction="in"/>
-      <arg name="idErrors" type="ai" direction="out"/>
-    </method>
-    <method name="AboutToShow">
-      <arg name="id" type="i" direction="in"/>
-      <arg name="needUpdate" type="b" direction="out"/>
-    </method>
-    <method name="AboutToShowGroup">
-      <arg name="ids" type="ai" direction="in"/>
-      <arg name="updatesNeeded" type="ai" direction="out"/>
-      <arg name="idErrors" type="ai" direction="out"/>
-    </method>
-    <signal name="ItemsPropertiesUpdated">
-      <arg name="updatedProps" type="a(ia{sv})"/>
-      <arg name="removedProps" type="a(ias)"/>
-    </signal>
-    <signal name="LayoutUpdated">
-      <arg name="revision" type="u"/>
-      <arg name="parent" type="i"/>
-    </signal>
-  </interface>
-</node>
-""")
-
 
 def _appearance(content: IconContent) -> tuple:
-    return content.title, content.description, content.pixmaps, [(entry.label, entry.action is not None) for entry in content.menu]
+    entries = []
+    for entry in content.menu:
+        entries.append((entry.label, entry.action is not None))
+    return content.title, content.description, content.pixmaps, entries
+
+
+def _nothing_to_update(arguments) -> GLib.Variant:
+    return GLib.Variant("(b)", (False,))
+
+
+def _no_group_to_update(arguments) -> GLib.Variant:
+    return GLib.Variant("(aiai)", ([], []))
 
 
 def _pixmaps(content: IconContent) -> list[tuple[int, int, bytes]]:
@@ -119,8 +54,8 @@ class TrayIcon:
             "GetProperty": self._get_property,
             "Event": self._on_event,
             "EventGroup": self._on_event_group,
-            "AboutToShow": lambda arguments: GLib.Variant("(b)", (False,)),
-            "AboutToShowGroup": lambda arguments: GLib.Variant("(aiai)", ([], [])),
+            "AboutToShow": _nothing_to_update,
+            "AboutToShowGroup": _no_group_to_update,
         }
         self.connection = self._own_connection()
         self.registrations = self._serve_item_and_menu()
@@ -180,7 +115,7 @@ class TrayIcon:
             "OverlayIconName": GLib.Variant("s", ""),
             "AttentionIconName": GLib.Variant("s", ""),
             "IconThemePath": GLib.Variant("s", ""),
-            "ToolTip": GLib.Variant("(sa(iiay)ss)", ("", [], content.title, content.description)),
+            "ToolTip": GLib.Variant("(sa(iiay)ss)", tool_tip(content)),
             "ItemIsMenu": GLib.Variant("b", True),
             "Menu": GLib.Variant("o", MENU_PATH),
         }.get(name)
@@ -210,13 +145,28 @@ class TrayIcon:
         return GLib.Variant("(u(ia{sv}av))", (self.revision, (ROOT, self._entry_properties(ROOT), children)))
 
     def _get_group_properties(self, arguments):
-        ids = arguments[0] or range(ROOT, len(self.content.menu) + 1)
-        return GLib.Variant("(a(ia{sv}))", ([(entry_id, self._entry_properties(entry_id)) for entry_id in ids if self._known(entry_id)],))
+        found = []
+        for entry_id in self._asked_ids(arguments[0]):
+            if self._known(entry_id):
+                found.append((entry_id, self._entry_properties(entry_id)))
+        return GLib.Variant("(a(ia{sv}))", (found,))
+
+    def _asked_ids(self, ids: list[int]):
+        if ids:
+            return ids
+        return range(ROOT, len(self.content.menu) + 1)
 
     def _get_property(self, arguments):
         entry_id, name = arguments
-        value = self._entry_properties(entry_id).get(name) if self._known(entry_id) else None
-        return GLib.Variant("(v)", (value or GLib.Variant("s", ""),))
+        return GLib.Variant("(v)", (self._property_or_empty(entry_id, name),))
+
+    def _property_or_empty(self, entry_id: int, name: str) -> GLib.Variant:
+        if not self._known(entry_id):
+            return GLib.Variant("s", "")
+        value = self._entry_properties(entry_id).get(name)
+        if value is None:
+            return GLib.Variant("s", "")
+        return value
 
     def _on_event(self, arguments):
         self._clicked(arguments[0], arguments[1])
@@ -250,4 +200,6 @@ class TrayIcon:
             action()
 
     def _action_of(self, entry_id: int):
-        return self._entry(entry_id).action if entry_id in self._entry_ids() else None
+        if entry_id not in self._entry_ids():
+            return None
+        return self._entry(entry_id).action

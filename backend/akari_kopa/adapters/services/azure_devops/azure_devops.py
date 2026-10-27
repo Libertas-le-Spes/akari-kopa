@@ -1,16 +1,15 @@
 from dataclasses import replace
 from datetime import timedelta
 from typing import Callable
-from urllib.parse import quote
 
 from akari_kopa.adapters.services.azure_devops.az import Az
-from akari_kopa.adapters.services.azure_devops.reading import ConversationReading, merge_request, repository_of
+from akari_kopa.adapters.services.azure_devops.places import PROFILES, organisation_api, project_api, pull_request_api
+from akari_kopa.adapters.services.azure_devops.conversation_reading import ConversationReading
+from akari_kopa.adapters.services.azure_devops.reading import merge_request, repository_of
 from akari_kopa.adapters.transport.https import Https
 from akari_kopa.attention.merge_request.merge_request import MergeRequest
 from akari_kopa.attention.merge_request.role import MINE, REVIEWING
 
-PROFILES = "https://app.vssps.visualstudio.com/_apis"
-ORGANISATIONS = "https://dev.azure.com"
 VERSION = "7.1"
 GIT_REPOSITORIES_SECURITY = "2e9eb7ed-3c0a-47d4-87c1-0ffdd275fd87"
 CONTRIBUTE = 4
@@ -21,7 +20,7 @@ class AzureDevOps:
     heading = "Azure DevOps"
     asked_every = timedelta(0)
 
-    def __init__(self, az: Az, connect: Callable[[str, str], Https]):
+    def __init__(self, az: Az, connect: Callable[[str], Https]):
         self.az = az
         self.connect = connect
 
@@ -32,49 +31,46 @@ class AzureDevOps:
         token = self.az.access_token()
         if not token:
             return []
-        api = self.connect("", token)
-        me = api.get(f"{PROFILES}/profile/profiles/me", **{"api-version": VERSION})["id"]
-        organisations = api.get(f"{PROFILES}/accounts", memberId=me, **{"api-version": VERSION})["value"]
+        api = self.connect(token)
+        me = api.get(f"{PROFILES}/profile/profiles/me", _asking({}))["id"]
         reading = ConversationReading(me)
-        return [found for organisation in organisations for found in self._in(api, organisation["accountName"], reading)]
+        found = []
+        for organisation in api.get(f"{PROFILES}/accounts", _asking({"memberId": me}))["value"]:
+            found += self._in(api, organisation["accountName"], reading)
+        return found
 
     def _in(self, api: Https, organisation: str, reading: ConversationReading) -> list[MergeRequest]:
-        mine = [self._mine(api, organisation, each, reading) for each in self._pull_requests(api, organisation, "creatorId", reading.me)]
-        reviewing = [self._reviewing(api, organisation, each) for each in self._pull_requests(api, organisation, "reviewerId", reading.me)]
-        return mine + reviewing
+        found = []
+        for pull_request in self._pull_requests(api, organisation, "creatorId", reading.me):
+            found.append(self._mine(api, organisation, pull_request, reading))
+        for pull_request in self._pull_requests(api, organisation, "reviewerId", reading.me):
+            found.append(merge_request(organisation, pull_request, self._builds(api, organisation, pull_request), REVIEWING))
+        return found
 
     def _pull_requests(self, api: Https, organisation: str, criterion: str, me: str) -> list[dict]:
-        found = api.get(
-            f"{ORGANISATIONS}/{quote(organisation)}/_apis/git/pullrequests",
-            **{f"searchCriteria.{criterion}": me, "searchCriteria.status": "active", "$top": "100", "api-version": VERSION},
-        )
-        return found["value"]
-
-    def _reviewing(self, api: Https, organisation: str, pull_request: dict) -> MergeRequest:
-        return merge_request(organisation, pull_request, self._builds(api, organisation, pull_request), REVIEWING)
+        criteria = {f"searchCriteria.{criterion}": me, "searchCriteria.status": "active", "$top": "100"}
+        return api.get(f"{organisation_api(organisation)}/git/pullrequests", _asking(criteria))["value"]
 
     def _mine(self, api: Https, organisation: str, pull_request: dict, reading: ConversationReading) -> MergeRequest:
         found = merge_request(organisation, pull_request, self._builds(api, organisation, pull_request), MINE)
-        threads = api.get(f"{_pull_request_path(organisation, pull_request)}/threads", **{"api-version": VERSION})["value"]
-        commits = api.get(f"{_pull_request_path(organisation, pull_request)}/commits", **{"$top": "1", "api-version": VERSION})["value"]
-        evaluation = api.post(f"{ORGANISATIONS}/{quote(organisation)}/_apis/security/permissionevaluationbatch",
-                              _may_contribute(pull_request), **{"api-version": VERSION})
+        threads = api.get(f"{pull_request_api(organisation, pull_request)}/threads", _asking({}))["value"]
+        commits = api.get(f"{pull_request_api(organisation, pull_request)}/commits", _asking({"$top": "1"}))["value"]
+        evaluation = api.post(f"{organisation_api(organisation)}/security/permissionevaluationbatch",
+                              _may_contribute(pull_request), _asking({}))
         return replace(found, conversation=reading.conversation(threads, commits), repository=repository_of(evaluation))
 
     def _builds(self, api: Https, organisation: str, pull_request: dict) -> list[dict]:
         project = pull_request["repository"]["project"]["id"]
-        found = api.get(
-            f"{ORGANISATIONS}/{quote(organisation)}/{project}/_apis/build/builds",
-            branchName=f"refs/pull/{pull_request['pullRequestId']}/merge",
-            maxBuildsPerDefinition="1", queryOrder="queueTimeDescending", **{"api-version": VERSION},
-        )
+        branch = f"refs/pull/{pull_request['pullRequestId']}/merge"
+        newest = {"branchName": branch, "maxBuildsPerDefinition": "1", "queryOrder": "queueTimeDescending"}
+        found = api.get(f"{project_api(organisation, project)}/build/builds", _asking(newest))
         return found["value"]
 
 
-def _pull_request_path(organisation: str, pull_request: dict) -> str:
-    repository = pull_request["repository"]
-    return (f"{ORGANISATIONS}/{quote(organisation)}/{repository['project']['id']}/_apis/git/repositories/{repository['id']}"
-            f"/pullRequests/{pull_request['pullRequestId']}")
+def _asking(parameters: dict[str, str]) -> dict[str, str]:
+    asked = dict(parameters)
+    asked["api-version"] = VERSION
+    return asked
 
 
 def _may_contribute(pull_request: dict) -> dict:

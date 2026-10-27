@@ -2,7 +2,8 @@ import unittest
 
 from akari_kopa.entrypoints.choose.choose import Choose
 from akari_kopa.use_cases.listing.listing import Listing
-from tests.fakes import Clock, FakeAnswers, FakeService, a_merge_request, on_day
+from akari_kopa.attention.merge_request.web_address import RefusedAddress
+from tests.fakes import FORGE_PAGE, Clock, FakeAnswers, FakeService, a_merge_request, on_day
 
 
 class FakeChooser:
@@ -24,19 +25,24 @@ class FakeBrowser:
     def __init__(self):
         self.opened = []
 
-    def open(self, url):
-        self.opened.append(url)
+    def open(self, address):
+        self.opened.append(address)
 
 
 class ChooseTest(unittest.TestCase):
     def setUp(self):
-        self.forge = FakeService("forge", a_merge_request(url="https://forge.example/1", reference="#1", author="Me"))
+        self.forge = FakeService("forge", a_merge_request(reference="#1", author="Me"))
         self.listing = Listing([self.forge], FakeAnswers(), Clock(on_day(1)))
         self.browser = FakeBrowser()
 
     def test_the_one_picked_opens_in_the_browser(self):
-        Choose(self.listing, FakeChooser("forge https://forge.example/1"), self.browser).run()
-        self.assertEqual(self.browser.opened, ["https://forge.example/1"])
+        Choose(self.listing, FakeChooser("forge forge.example me/thing #1"), self.browser).run()
+        self.assertEqual(self.browser.opened, [FORGE_PAGE])
+
+    def test_picking_one_whose_address_was_refused_opens_nothing(self):
+        self.forge.answer = [a_merge_request(reference="#1", address=RefusedAddress("only https addresses are opened", "forge.example"))]
+        Choose(self.listing, FakeChooser("forge forge.example me/thing #1"), self.browser).run()
+        self.assertEqual(self.browser.opened, [])
 
     def test_closing_the_list_opens_nothing(self):
         Choose(self.listing, FakeChooser(None), self.browser).run()
@@ -55,4 +61,4 @@ class ChooseTest(unittest.TestCase):
         self.assertEqual(chooser.shown, ("No open merge requests right now.", []))
 
     def test_without_a_list_dialog_it_says_what_to_install(self):
-        self.assertIn("zenity or kdialog", Choose(self.listing, None, self.browser).run())
+        self.assertIn("install zenity", Choose(self.listing, None, self.browser).run())

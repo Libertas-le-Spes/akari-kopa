@@ -4,9 +4,11 @@ from akari_kopa.adapters.services.azure_devops.az import AZURE_DEVOPS, Az
 from akari_kopa.adapters.services.azure_devops.azure_devops import AzureDevOps
 from akari_kopa.adapters.services.moment import moment
 from akari_kopa.attention.merge_request.role import MINE, REVIEWING
+from akari_kopa.attention.merge_request.web_address import WebAddress
 from akari_kopa.attention.pipeline.pipeline import FAILED, RUNNING
 from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
-from tests.fakes import FakeCommandLine, on_day
+from tests.fake_command_line import FakeCommandLine
+from tests.fakes import on_day
 
 ORG = "https://dev.azure.com/contoso"
 PULL_REQUEST = f"{ORG}/p1/_apis/git/repositories/r1/pullRequests"
@@ -24,7 +26,9 @@ def pull_request(number: int, author: str) -> dict:
 
 def thread(author: str, day: float, status: str | None, kind: str = "text") -> dict:
     found = {"comments": [{"author": {"id": author}, "publishedDate": at(day), "commentType": kind}]}
-    return {**found, "status": status} if status else found
+    if status:
+        found["status"] = status
+    return found
 
 
 GETS = {
@@ -44,26 +48,36 @@ GETS = {
 
 
 class FakeHttps:
-    def __init__(self, base: str, token: str):
+    def __init__(self, token: str):
         self.token = token
         self.posted = []
 
-    def get(self, path: str, **parameters: str):
+    def get(self, path: str, parameters: dict[str, str]):
         if "searchCriteria.creatorId" in parameters:
             return {"value": [pull_request(7, "Me Myself")]}
         if "searchCriteria.reviewerId" in parameters:
             return {"value": [pull_request(8, "Ana")]}
-        number = parameters.get("branchName", "").split("/")[2] if "branchName" in parameters else ""
-        return GETS[f"{path} {number}".strip()]
+        return GETS[f"{path} {_pull_request_number(parameters)}".strip()]
 
-    def post(self, path: str, body: dict, **parameters: str):
+    def post(self, path: str, body: dict, parameters: dict[str, str]):
         self.posted.append(body["evaluations"][0]["token"])
         return {"evaluations": [{"value": False}]}
 
 
+def _pull_request_number(parameters: dict) -> str:
+    if "branchName" not in parameters:
+        return ""
+    return parameters["branchName"].split("/")[2]
+
+
 def az(installed: bool = True, token: str | None = "token") -> Az:
-    said = {TOKEN: token} if token else {}
-    return Az(FakeCommandLine({"az"} if installed else set(), said=said))
+    said = {}
+    if token:
+        said[TOKEN] = token
+    tools = set()
+    if installed:
+        tools.add("az")
+    return Az(FakeCommandLine(tools, said=said))
 
 
 class AzureDevOpsTest(unittest.TestCase):
@@ -71,8 +85,8 @@ class AzureDevOpsTest(unittest.TestCase):
         self.connected = []
         self.found = AzureDevOps(az(), self._connect).merge_requests()
 
-    def _connect(self, base, token):
-        self.connected.append(FakeHttps(base, token))
+    def _connect(self, token):
+        self.connected.append(FakeHttps(token))
         return self.connected[-1]
 
     def test_the_token_az_gives_is_the_one_sent(self):
@@ -80,7 +94,7 @@ class AzureDevOpsTest(unittest.TestCase):
 
     def test_mine_and_the_one_i_review_in_every_organisation(self):
         self.assertEqual([(each.reference, each.role, each.author) for each in self.found], [("!7", MINE, "Me Myself"), ("!8", REVIEWING, "Ana")])
-        self.assertEqual(self.found[0].url, "https://dev.azure.com/contoso/Shop/_git/Web%20App/pullrequest/7")
+        self.assertEqual(self.found[0].address, WebAddress("https://dev.azure.com/contoso/Shop/_git/Web%20App/pullrequest/7", "dev.azure.com"))
 
     def test_a_build_still_going_is_running_and_a_failed_one_fails_it(self):
         self.assertEqual([each.pipeline for each in self.found], [RUNNING, FAILED])

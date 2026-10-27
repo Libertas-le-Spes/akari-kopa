@@ -2,6 +2,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from akari_kopa.adapters.storage.xdg_folders import base_folder
+
 
 @dataclass(frozen=True)
 class Environment:
@@ -16,7 +18,15 @@ class Environment:
 def this_session() -> Environment:
     home = Path.home()
     return Environment(
-        frozenset(name.lower() for name in os.environ.get("XDG_CURRENT_DESKTOP", "").split(":") if name),
-        Path(os.environ.get("XDG_CONFIG_HOME") or home / ".config"),
-        Path(os.environ.get("XDG_DATA_HOME") or home / ".local" / "share"),
+        _desktops(os.environ.get("XDG_CURRENT_DESKTOP", "")),
+        base_folder("XDG_CONFIG_HOME", home / ".config"),
+        base_folder("XDG_DATA_HOME", home / ".local" / "share"),
     )
+
+
+def _desktops(named: str) -> frozenset[str]:
+    desktops = set()
+    for name in named.split(":"):
+        if name:
+            desktops.add(name.lower())
+    return frozenset(desktops)

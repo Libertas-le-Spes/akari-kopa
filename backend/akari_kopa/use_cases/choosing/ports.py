@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Protocol
 
+from akari_kopa.attention.merge_request.web_address import WebAddress
+
 
 @dataclass(frozen=True)
 class Option:
@@ -17,4 +19,4 @@ class Chooser(Protocol):
 
 
 class Browser(Protocol):
-    def open(self, url: str) -> None: ...
+    def open(self, address: WebAddress) -> None: ...
