@@ -1,6 +1,6 @@
 # Security review
 
-This review describes the repository at commit `734c9ca627a6e6fb2fd1874f565a5ee76f685d37` on 2026-10-22. Most of what it proposes is planned, not done. It will change: whoever fixes a finding, or makes any part of this document untrue, updates it in the same pull request.
+This review first described the repository at commit `734c9ca627a6e6fb2fd1874f565a5ee76f685d37` on 2026-10-22. It was checked again on 2026-10-27, when five more findings were added (F11 to F15), and the branch `security-review-akari` fixed every finding that code can fix. What is still open is marked as such below. It will change: whoever fixes a finding, or makes any part of this document untrue, updates it in the same pull request.
 
 ## What Akari Kopa is, and what an attacker would want from it
 
@@ -27,6 +27,26 @@ The two that most need fixing are:
 
 Everything below was checked against that commit. Where a claim is about what code does, it was run against made-up data and the output is pasted.
 
+## Where each finding stands
+
+| ID | Severity | Status on `security-review-akari` |
+|---|---|---|
+| F1 | Medium | **Fixed.** Every address goes through one check (`https`, the host that was asked, no login, no space, backslash or hidden character) and becomes a `WebAddress`; anything else becomes a `RefusedAddress` that opens nothing and says why in the list. The cache stores the host with each address and checks it again on reading. The bar's QML has its own `https://` guard. |
+| F2 | Medium | **Open: needs repository and organisation settings**, which this branch does not change. Option D is ruled out: `omarchy plugin` cannot install a tag (see F2). The README no longer tells users to skip the update's diff (F11). |
+| F3 | Medium | **Fixed.** The launcher runs `python3 -I` on a start file that adds only its own folder. `install.sh` checks Python the same way and stops the tray by the new command line. |
+| F4 | Medium | **Fixed.** Redirects are refused, the token is sent only over `https` to `dev.azure.com` and `app.vssps.visualstudio.com`, and it is an unredirected header. Every part the server gave is escaped in API paths. |
+| F5 | Low | **Fixed except `tea`.** List rows go to `zenity` on standard input; `kdialog` is no longer used. GraphQL queries and variables go to `gh` and `glab` as a JSON body on standard input. `tea` still takes repository names as arguments; the README advises `hidepid` for shared machines. |
+| F6 | Low | **Partly done: the README says which read-only logins to use (option A).** Akari Kopa's own read-only tokens in the Secret Service (option B) are not built. |
+| F7 | Low | **Fixed.** Notification bodies and tray tooltips are escaped. |
+| F8 | Low | **Fixed.** The cache folder is opened without following a link, refused if another account owns it, tightened to `0700` if it is yours; files are created exclusively, private from the start, under a random name, then swapped in. |
+| F9 | Info | **Fixed.** A shortcut is refused when the install path has anything outside letters, digits, `/`, `.`, `_` and `-`; `install.sh` refuses the same. Configuration is written to a new copy and swapped in whole, keeping its permissions; a linked dotfile stays a link; an edit made meanwhile is never overwritten. |
+| F10 | Info | **Fixed in code, open in settings.** `.github/workflows/tests.yml` runs the tests on every pull request with read-only permissions and a pinned action. It becomes a guard only once F2's ruleset requires it. |
+| F11 | Low | **Fixed.** The README no longer passes `--yes` to `omarchy plugin add` or `update`. |
+| F12 | Low | **Fixed.** Every forge tool gets 60 seconds, then the service shows "not updated" with the reason. |
+| F13 | Info | **Fixed.** Relative `XDG_CACHE_HOME`, `XDG_CONFIG_HOME` and `XDG_DATA_HOME` are ignored, as the specification says. |
+| F14 | Info | **Fixed.** `install.sh` refuses to replace another program called `akari` or `akari-kopa`, and `--remove` only removes its own links. The README uses `ln -s`, which refuses as well. |
+| F15 | Info | **Open: organisation settings**, tracked in the organisation's own review (Libertas-le-Spes/Libertas-le-Spes#1). |
+
 ## Findings
 
 | ID | Severity | Title | Location |
@@ -41,6 +61,11 @@ Everything below was checked against that commit. Where a claim is about what co
 | F8 | Low | The cache writer follows a planted link and does not tighten a folder that already exists | `backend/akari_kopa/adapters/storage/answer_folder.py:28-33` |
 | F9 | Info | The install path goes unescaped into shell and Lua configuration, which is rewritten in place | `backend/akari_kopa/adapters/shortcuts/hyprland.py:30,43`, `sway.py:12`, `kde.py:27`, `config_lines.py:14-20` |
 | F10 | Info | Nothing runs the tests on a pull request | no `.github/workflows` |
+| F11 | Low | The README tells users to skip Omarchy's own review of each update | `README.md:23,40` |
+| F12 | Low | A forge tool that never answers stops the bar updating, with no reason shown | `backend/akari_kopa/adapters/transport/command_line.py:17,24` |
+| F13 | Info | A relative `XDG_CACHE_HOME` puts the cache in whichever folder you are in | `adapters/storage/locations.py:6`, `adapters/shortcuts/environment.py:20-21` |
+| F14 | Info | Installing replaces any other program called `akari` or `akari-kopa` without asking | `install.sh:46-47`, `README.md:30-31` |
+| F15 | Info | Two admin accounts, no two-factor rule, and secret scanning and private reporting are off | GitHub organisation and repository settings |
 
 ---
 
@@ -119,9 +144,11 @@ The last five commits are unsigned (`git log --format=%G?` gives `N` for each). 
 | A. A ruleset on `main`: changes only through pull requests, no force-push, no deletion, required status check (F10) | Direct and force pushes; merges that break the tests | A merged pull request from a stolen account that has merge rights |
 | B. Require signed commits on `main` | Commits made with a stolen GitHub token or session alone, without the signing key | A stolen signing key; a malicious change that the owner signs without noticing |
 | C. Require two-factor sign-in for everyone in the organisation | Most stolen-password takeovers | Stolen session cookies and tokens |
-| D. Users install a signed tag or a fixed commit, not `main` | A bad push reaching users before it is released | A bad change that gets released. Depends on whether `omarchy plugin` can install a given tag or commit; **not verified**. |
+| D. Users install a signed tag or a fixed commit, not `main` | A bad push reaching users before it is released | **Not possible with Omarchy's tools**, checked on 2026-10-27: `omarchy-plugin-add` runs `git clone -- "$url"` (the default branch), and `omarchy-plugin-update` runs `git fetch origin HEAD` and `git merge --ff-only FETCH_HEAD`. Neither takes a tag or commit, and neither checks signatures. Whoever can change `main`, or the default branch, changes what every install gets. |
 
-**Recommendation: A, B and C now, D once confirmed.** These are settings, not code, and they protect every later fix in this document. Each one covers a gap in the others.
+**Recommendation: A, B and C.** These are settings, not code, and they protect every later fix in this document. Each one covers a gap in the others. Since D cannot be done, A is the only thing between a stolen login and every user's next update; the one check left on the user's side is the diff `omarchy plugin update` shows before it applies, which the README now asks people to read (F11).
+
+**Checked again on 2026-10-27:** `main` is still not protected, the repository has no rulesets, and the organisation does not require two-factor sign-in (`two_factor_requirement_enabled: false`). The repository has two accounts with admin rights. Requiring two-factor sign-in removes any member who has not set it up, so check with every member before turning it on.
 
 **How to seal it.** The ruleset itself is the seal. Note in the README's install section which tag users should install. A scheduled check could read `protected` from the same public API and fail when it is `false`.
 
@@ -228,6 +255,8 @@ rw,nosuid,nodev,noexec,relatime
 | D. Advise mounting `/proc` with `hidepid=invisible` on shared machines | Every argument leak on that machine, from every program | Machines where it is not set; it can break tools that read other users' processes |
 
 **Recommendation: A, B and C, and mention D in the README for shared machines.** That leaves one known gap, `tea`'s path, which should be written down here until it is closed.
+
+**How B was done.** `gh api graphql --input -` takes the body as documented. `glab api graphql --input -` does not: its `graphql` shortcut drops the body and GitLab answers "Unexpected end of document". `glab` reads the body when the endpoint is given as the path `../graphql`, resolved against the API address it already uses for that host, with `Content-Type: application/json`. Checked on 2026-10-27 with a query asking only for the signed-in user's name, then by comparing the branch's `board` with `main`'s on the owner's own logins: the same merge requests, colours and states.
 
 **How to seal it.** A test with a recording fake command runner, a made-up title used as a marker, and a run through every service and the list: no argument may contain the marker.
 
@@ -367,21 +396,68 @@ Sources: [GitHub: security hardening for GitHub Actions](https://docs.github.com
 | `install.sh` | No downloads and no `sudo`. It only links the command, writes an autostart entry and names missing packages. |
 | Tests | Use made-up data and fakes. Run with stub openers, they started nothing. |
 
-## Plan: small steps, safest first
+## F11 · Low · The README tells users to skip Omarchy's own review of each update
 
-Each step can ship on its own, has its own tests, and updates this document in the same pull request.
+**What this is.** `omarchy plugin update` shows the diff of what is about to arrive and asks before applying it; `omarchy plugin add` warns that plugins run as unsandboxed code. `--yes` skips both. The README gave both commands with `--yes`.
 
-1. **Protect `main` (F2 A, B, C).** A ruleset, signed commits, two-factor sign-in for the organisation. Settings only, and it protects every step after it.
-2. **Run the tests on every pull request (F10).** A least-privilege workflow, made a required check. From here on, every seal below is enforced.
-3. **Check every address before it can be opened (F1 B and C).** A web address type in the `attention` ring, made only by its check. One small factory per forge that knows that forge's host, all behind the same interface, with no branching on which forge it is. The cache reads through the same check. The openers take only the type, and the QML gets its own guard. Hostile-address tests and the architecture test.
-4. **Start Python isolated (F3 B).** A launcher file run with `python3 -I`; update `install.sh`'s `pkill` pattern. The planted-module test.
-5. **Lock down the Azure transport (F4 B, C, D).** No redirects, a host allowlist, an unredirected header. The two-server test.
-6. **Keep merge request details out of process arguments (F5 A, B, C).** Rows to `zenity` and queries to `gh` and `glab` on standard input; retire `kdialog`; note `tea`'s gap here. The marker test.
-7. **Escape markup in notifications and tooltips (F7).** The made-up markup test.
-8. **Harden the cache writer (F8).** Folder check, exclusive no-follow creation, fail closed. The planted-link test.
-9. **Read-only logins in the Secret Service (F6 B),** one class per forge's way of handing over a token, failing closed when the keyring is locked. Update the README's Services section.
-10. **Refuse unsafe install paths and write configuration atomically (F9).**
-11. **Pin installs to signed tags (F2 D),** once it is confirmed that `omarchy plugin` can install a given tag or commit.
+**What happens if it is left alone.** That diff is the only point at which a user sees a change before it runs as them, next to their forge logins (F2, F6). Skipping it removes the last check on the user's side.
+
+**Fix.** The README gives both commands without `--yes`, and says to read the change before saying yes. `omarchy plugin remove` keeps `--yes`: removing code cannot run anything.
+
+---
+
+## F12 · Low · A forge tool that never answers stops the bar updating, with no reason shown
+
+**What this is.** Akari Kopa waits for `gh`, `glab`, `tea`, `az` and the desktop tools to finish with no time limit. The bar starts a new reading only when the last one has finished, and the tray does the same.
+
+**What happens if it is left alone.** One server that accepts a connection and never answers, or a tool stuck at a prompt, freezes every orb at its last state with no "not updated" mark. A user goes on trusting a green orb for a pipeline that has since failed.
+
+**Fix.** Every tool gets 60 seconds, then the service is shown as not updated with "… did not answer within 60 seconds". Tools that get no input are given an empty standard input, so none can sit waiting on the bar's. The list dialog is the one exception: it waits for the person.
+
+---
+
+## F13 · Info · A relative `XDG_CACHE_HOME` puts the cache in whichever folder you are in
+
+**What this is.** The cache folder came from `XDG_CACHE_HOME`, and the shortcut's configuration folders from `XDG_CONFIG_HOME` and `XDG_DATA_HOME`, whatever they held. The XDG specification says a relative path in them is invalid and must be ignored.
+
+**What happens if it is left alone.** With one of them set to a relative path, running `akari` in a downloaded folder reads a cache planted there (F1's addresses) or writes shortcut configuration into it. It needs an unusual environment, hence Info.
+
+**Fix.** A relative value is ignored and the usual folder used.
+
+---
+
+## F14 · Info · Installing replaces any other program called `akari` or `akari-kopa` without asking
+
+**What this is.** `install.sh` and the README linked the commands with `ln -sf`, which silently replaces whatever was there; `install.sh --remove` deleted both names whatever they were. The same finding was made in Hiru Tsatsi.
+
+**Fix.** `install.sh` links a name only if it is free or already its own link, refuses otherwise, and removes only its own links. The README uses `ln -s`, which refuses on its own.
+
+---
+
+## F15 · Info · Two admin accounts, no two-factor rule, and secret scanning and private reporting are off
+
+**What was found on 2026-10-27** through GitHub's API: the repository has two collaborators with admin rights; the organisation does not require two-factor sign-in; secret scanning, push protection and Dependabot security updates are disabled; private vulnerability reporting is off.
+
+**What happens if it is left alone.** Every admin account is a way to change `main` (F2), and with no two-factor rule a password alone is enough. Without private reporting, someone who finds a problem can only report it in public.
+
+**Fix.** These are organisation-wide and are tracked in the organisation's own review (Libertas-le-Spes/Libertas-le-Spes#1, findings F1, F2, F3 and F10 there). For this repository: keep admin to the accounts that need it, and turn on private vulnerability reporting.
+
+---
+
+## What else was checked on 2026-10-27
+
+| Area | What was found |
+|---|---|
+| Server values in Gitea API paths | `tea api` paths include the repository name and commit the server gave. They can only point at another path on the same server, which already chose the answers; left as they are. |
+| GraphQL errors | Calling `glab` by path no longer turns a GraphQL error into a failure, so the transport now reports any `errors` in an answer itself. |
+| Old caches | A cache written before this branch has no host stored with each address. It is not used; the next reading replaces it. |
+| Tests | No test writes a file, runs a shell or opens a browser. Each fix was taken out in turn and a test then failed: the host and scheme checks, the bar's guard, the unredirected header, the host list, the redirect refusal, the time limit, the markup escape, the folder owner check, exclusive file creation, the cache re-check, the changed-meanwhile check, the install path check, `-I`, GraphQL on standard input and relative XDG paths. |
+
+## Plan: what is left
+
+1. **Protect `main` (F2 A, B, C; F15).** A ruleset on `main`: changes only through pull requests, no force-push or deletion, the `Tests` check required. Signed commits. Two-factor sign-in for the organisation, after checking with every member. Private vulnerability reporting on.
+2. **Read-only logins in the Secret Service (F6 B),** one class per forge's way of handing over a token, failing closed when the keyring is locked. It changes how every user logs in, so it waits for a decision.
+3. **Close `tea`'s argument gap (F5)** when `tea api` can take its path some other way.
 
 ## Sources
 
@@ -406,4 +482,5 @@ Each step can ship on its own, has its own tests, and updates this document in t
 - GitHub, rulesets: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
 - GitHub, requiring two-factor authentication: https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-two-factor-authentication-for-your-organization/requiring-two-factor-authentication-in-your-organization
 - GitHub, security hardening for GitHub Actions: https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions
-- CWE-20, CWE-59, CWE-78, CWE-88, CWE-116, CWE-200, CWE-214, CWE-276, CWE-319, CWE-427, CWE-494: https://cwe.mitre.org/data/definitions/<number>.html
+- XDG Base Directory specification: https://specifications.freedesktop.org/basedir-spec/latest/
+- CWE-20, CWE-59, CWE-78, CWE-88, CWE-116, CWE-200, CWE-214, CWE-276, CWE-319, CWE-400, CWE-427, CWE-494: https://cwe.mitre.org/data/definitions/<number>.html
