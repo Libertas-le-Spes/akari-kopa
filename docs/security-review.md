@@ -232,11 +232,11 @@ Sources: [CPython `urllib/request.py`, `HTTPRedirectHandler.redirect_request`](h
 
 **No token is ever in an argument.** That was checked for every call, and the Azure token arrives on `az`'s output.
 
-**Shown with made-up data**, through the real list adapter with a stub `zenity` that waits:
+**Shown with made-up data** (names changed afterwards to plain ones), through the real list adapter with a stub `zenity` that waits:
 
 ```text
 pid 2315895 mode: -r--r--r-- kayu
-/bin/sh …/slowbin/zenity --list --title=Akari Kopa --text=Open which one? … --print-column=1 gitlab https://gitlab.example.com/acme/secret-merger/-/merge_requests/7 !7 · Example Person Acquire Example Corp quietly · acme/secret-merger
+/bin/sh …/slowbin/zenity --list --title=Akari Kopa --text=Open which one? … --print-column=1 gitlab https://gitlab.example.com/example-team/secret-merger/-/merge_requests/7 !7 · Example Person Acquire Example Corp quietly · example-team/secret-merger
 --- /proc mount options:
 rw,nosuid,nodev,noexec,relatime
 ```

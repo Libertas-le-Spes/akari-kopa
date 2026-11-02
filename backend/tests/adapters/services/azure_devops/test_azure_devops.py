@@ -10,7 +10,7 @@ from akari_kopa.attention.repository.follow_up import SOMEONE_ELSES
 from tests.fake_command_line import FakeCommandLine
 from tests.fakes import on_day
 
-ORG = "https://dev.azure.com/contoso"
+ORG = "https://dev.azure.com/example-org"
 PULL_REQUEST = f"{ORG}/p1/_apis/git/repositories/r1/pullRequests"
 TOKEN = ("az", "account", "get-access-token", "--resource", AZURE_DEVOPS, "--query", "accessToken", "--output", "tsv")
 
@@ -33,7 +33,7 @@ def thread(author: str, day: float, status: str | None, kind: str = "text") -> d
 
 GETS = {
     "https://app.vssps.visualstudio.com/_apis/profile/profiles/me": {"id": "me"},
-    "https://app.vssps.visualstudio.com/_apis/accounts": {"value": [{"accountName": "contoso"}]},
+    "https://app.vssps.visualstudio.com/_apis/accounts": {"value": [{"accountName": "example-org"}]},
     f"{ORG}/p1/_apis/build/builds 7": {"value": [{"status": "inProgress"}, {"status": "completed", "result": "succeeded"}]},
     f"{ORG}/p1/_apis/build/builds 8": {"value": [{"status": "completed", "result": "failed"}]},
     f"{PULL_REQUEST}/7/threads": {"value": [
@@ -94,7 +94,7 @@ class AzureDevOpsTest(unittest.TestCase):
 
     def test_mine_and_the_one_i_review_in_every_organisation(self):
         self.assertEqual([(each.reference, each.role, each.author) for each in self.found], [("!7", MINE, "Me Myself"), ("!8", REVIEWING, "Ana")])
-        self.assertEqual(self.found[0].address, WebAddress("https://dev.azure.com/contoso/Shop/_git/Web%20App/pullrequest/7", "dev.azure.com"))
+        self.assertEqual(self.found[0].address, WebAddress("https://dev.azure.com/example-org/Shop/_git/Web%20App/pullrequest/7", "dev.azure.com"))
 
     def test_a_build_still_going_is_running_and_a_failed_one_fails_it(self):
         self.assertEqual([each.pipeline for each in self.found], [RUNNING, FAILED])

@@ -19,5 +19,5 @@ class Connection(unittest.TestCase):
 class Places(unittest.TestCase):
     def test_every_part_the_server_gave_is_escaped_so_it_cannot_change_the_path(self):
         pull_request = {"pullRequestId": 7, "repository": {"id": "../../x?y", "project": {"id": "p/1#"}}}
-        self.assertEqual(pull_request_api("con toso", pull_request),
-                         "https://dev.azure.com/con%20toso/p%2F1%23/_apis/git/repositories/..%2F..%2Fx%3Fy/pullRequests/7")
+        self.assertEqual(pull_request_api("example org", pull_request),
+                         "https://dev.azure.com/example%20org/p%2F1%23/_apis/git/repositories/..%2F..%2Fx%3Fy/pullRequests/7")
